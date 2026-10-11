@@ -290,64 +290,99 @@
   accent-color: #c9a962;
 }
 
-/* Gabarit compact quand le panneau est large mais peu haut
-   (paysage, canvas au-dessus de la conversation) */
-@media (min-width: 560px) and (max-height: 620px) {
-  .piano-app {
-    gap: 10px;
-    padding: 12px 16px;
-  }
+/* ---- Portrait : en-tête resserré, la hauteur disponible profite aux touches ---- */
+.piano-app.layout-narrow {
+  gap: 12px;
+}
 
-  .piano-header h1 {
-    font-size: 16px;
-    letter-spacing: 0.3em;
-    gap: 12px;
-  }
+.layout-narrow .piano-header h1 {
+  font-size: 22px;
+  letter-spacing: 0.32em;
+  gap: 12px;
+}
 
-  .piano-sub {
-    display: none;
-  }
+.layout-narrow .piano-sub {
+  font-size: 12px;
+  margin-top: 8px;
+}
 
-  .audio-badge {
-    font-size: 10px;
-    padding: 2px 10px;
-  }
+.layout-narrow .piano {
+  padding: 14px 14px 18px;
+}
 
-  .piano-display {
-    height: 34px;
-  }
+.layout-narrow .piano-keys {
+  height: clamp(160px, 30vh, 240px);
+}
 
-  .piano-display-note {
-    font-size: 26px;
-    min-width: 64px;
-  }
+.layout-narrow .piano-controls {
+  gap: 14px;
+}
 
-  .piano {
-    padding: 10px 10px 12px;
-  }
+/* ---- Paysage : clavier étendu, touches plus longues ---- */
+.piano-app.layout-wide {
+  gap: 10px;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+}
 
-  .piano-keys {
-    height: clamp(110px, 30vh, 170px);
-  }
+.layout-wide .piano-header h1 {
+  font-size: clamp(15px, 3.2vh, 26px);
+  letter-spacing: 0.3em;
+  gap: 12px;
+}
 
-  .white-key {
-    border-radius: 0 0 6px 6px;
-  }
+/* En paysage la hauteur est rare : l'explication s'efface (le badge audio
+   dit déjà l'essentiel) et revient dès que la place le permet. */
+.layout-wide .piano-sub {
+  display: none;
+}
 
-  .key-note {
-    font-size: 9px;
+@media (min-height: 700px) {
+  .layout-wide .piano-sub {
+    display: block;
   }
+}
 
-  .key-bind {
-    font-size: 8px;
-    padding: 0 4px;
-  }
+.layout-wide .audio-badge {
+  font-size: 10px;
+  padding: 3px 10px;
+}
 
-  .piano-controls {
-    gap: 14px;
-  }
+.layout-wide .piano-display {
+  height: clamp(32px, 6vh, 48px);
+}
 
-  .piano-controls input[type="range"] {
-    width: 110px;
+.layout-wide .piano-display-note {
+  font-size: clamp(26px, 5vh, 44px);
+  min-width: 76px;
+}
+
+.layout-wide .piano {
+  padding: 12px 12px 16px;
+}
+
+/* Paysage : touches sensiblement plus longues, elles occupent la hauteur
+   libérée par l'en-tête compact. */
+.layout-wide .piano-keys {
+  height: clamp(170px, 46vh, 320px);
+}
+
+.layout-wide .key-note {
+  font-size: 9px;
+}
+
+.layout-wide .piano-controls {
+  gap: 14px;
+}
+
+.layout-wide .piano-controls input[type="range"] {
+  width: 110px;
+}
+
+/* Paysage très bas (téléphone en plein écran) : on borne la longueur des
+   touches pour garder en-tête + clavier + réglages visibles sans défilement. */
+@media (max-height: 440px) {
+  .layout-wide .piano-keys {
+    height: clamp(130px, 42vh, 170px);
   }
 }

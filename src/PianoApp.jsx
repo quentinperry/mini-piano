@@ -16,9 +16,10 @@ const DEFAULT_TESSITURE = "tenor";
 const NARROW_COUNT = 17;
 const WIDE_COUNT = 25;
 
-// Mesure la place réellement disponible dans le canvas via un ResizeObserver.
+// Mesure la place réellement disponible via un ResizeObserver.
 // Plus fiable que l'orientation annoncée par l'iframe (qui peut être fausse
-// ou flotter pendant une rotation) : on décide selon l'espace réellement rendu.
+// ou flotter pendant une rotation) : portrait ou paysage se déduit du
+// rapport largeur/hauteur réellement rendu.
 function useContainerSize() {
   const ref = useRef(null);
   const [size, setSize] = useState(() => ({
@@ -44,10 +45,9 @@ function useContainerSize() {
 
 export default function PianoApp() {
   const { ref: rootRef, size } = useContainerSize();
-  // Auto : clavier étendu dès que la place le permet ; forçable manuellement.
-  const [layoutMode, setLayoutMode] = useState("auto"); // auto | wide | narrow
-  const autoWide = size.width >= 600;
-  const isWide = layoutMode === "auto" ? autoWide : layoutMode === "wide";
+  // Portrait : clavier compact (17 demi-tons). Paysage : étendu (25, toute
+  // la tessiture). Le gabarit suit l'orientation réelle, sans réglage manuel.
+  const isWide = size.width > 0 && size.width >= size.height;
   const [voiceId, setVoiceId] = useState(DEFAULT_TESSITURE);
   const [octave, setOctave] = useState(0);
   const [volume, setVolume] = useState(0.5);
@@ -209,7 +209,10 @@ export default function PianoApp() {
   };
 
   return (
-    <div className="piano-app" ref={rootRef}>
+    <div
+      className={`piano-app ${isWide ? "layout-wide" : "layout-narrow"}`}
+      ref={rootRef}
+    >
       <header className="piano-header">
         <h1>Mini Piano</h1>
         <p className="piano-sub">
@@ -257,26 +260,6 @@ export default function PianoApp() {
             ))}
           </div>
           <span className="piano-range">{rangeText}</span>
-        </div>
-
-        <div className="control-group">
-          <span className="control-label">Clavier</span>
-          <div className="voice-btns">
-            {[
-              { id: "auto", label: "Auto" },
-              { id: "wide", label: "Étendu" },
-              { id: "narrow", label: "Compact" },
-            ].map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                className={layoutMode === m.id ? "is-selected" : ""}
-                onClick={() => setLayoutMode(m.id)}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         {fsAvailable && (

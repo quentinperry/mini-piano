@@ -5,7 +5,11 @@
   flex-direction: column;
   align-items: center;
   gap: 18px;
-  padding: 32px 16px;
+  padding:
+    calc(32px + env(safe-area-inset-top, 0px))
+    max(16px, env(safe-area-inset-right, 16px))
+    calc(32px + env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 16px));
   background:
     radial-gradient(900px 480px at 50% -80px, rgba(201, 169, 98, 0.16), transparent 70%),
     radial-gradient(1400px 900px at 50% 120%, rgba(23, 34, 66, 0.85), transparent 60%),

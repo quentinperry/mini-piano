@@ -55,6 +55,8 @@ export default function PianoApp() {
   const [activeIds, setActiveIds] = useState(() => new Set());
   const [lastNote, setLastNote] = useState(null);
   const [audioStatus, setAudioStatus] = useState("idle");
+  const [fsAvailable, setFsAvailable] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const synthRef = useRef(null);
   if (!synthRef.current) synthRef.current = new Synth();
@@ -108,6 +110,24 @@ export default function PianoApp() {
     ensureAudio();
     setAudioStatus(audioState());
   }, []);
+
+  // Plein écran : indisponible sur iPhone (Safari) et dans certaines iframes
+  // de rendu, le bouton se cache alors automatiquement.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    setFsAvailable(!!document.fullscreenEnabled);
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  };
 
   // Déblocage audio : les navigateurs exigent un geste pour démarrer le son.
   // On réveille le contexte à chaque premier geste utile.
@@ -258,6 +278,17 @@ export default function PianoApp() {
             ))}
           </div>
         </div>
+
+        {fsAvailable && (
+          <div className="control-group">
+            <span className="control-label">Affichage</span>
+            <div className="voice-btns">
+              <button type="button" onClick={toggleFullscreen}>
+                {isFullscreen ? "Quitter plein écran" : "Plein écran"}
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="control-group">
           <span className="control-label">Octave</span>

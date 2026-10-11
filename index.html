@@ -2,10 +2,16 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Mini Piano — l'outil des choristes</title>
     <meta name="description" content="Mini piano pour choristes : tessitures soprano, alto, ténor et basse, notation solfège, son de piano Web Audio." />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎹</text></svg>" />
+    <meta name="theme-color" content="#0c1220" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Mini Piano" />
     <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
@@ -17,7 +23,11 @@
   flex-direction: column;
   align-items: center;
   gap: 18px;
-  padding: 32px 16px;
+  padding:
+    calc(32px + env(safe-area-inset-top, 0px))
+    max(16px, env(safe-area-inset-right, 16px))
+    calc(32px + env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 16px));
   background:
     radial-gradient(900px 480px at 50% -80px, rgba(201, 169, 98, 0.16), transparent 70%),
     radial-gradient(1400px 900px at 50% 120%, rgba(23, 34, 66, 0.85), transparent 60%),
@@ -742,6 +752,8 @@ function PianoApp() {
   const [activeIds, setActiveIds] = useState(() => new Set());
   const [lastNote, setLastNote] = useState(null);
   const [audioStatus, setAudioStatus] = useState("idle");
+  const [fsAvailable, setFsAvailable] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const synthRef = useRef(null);
   if (!synthRef.current) synthRef.current = new Synth();
@@ -795,6 +807,24 @@ function PianoApp() {
     ensureAudio();
     setAudioStatus(audioState());
   }, []);
+
+  // Plein écran : indisponible sur iPhone (Safari) et dans certaines iframes
+  // de rendu, le bouton se cache alors automatiquement.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    setFsAvailable(!!document.fullscreenEnabled);
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  };
 
   // Déblocage audio : les navigateurs exigent un geste pour démarrer le son.
   // On réveille le contexte à chaque premier geste utile.
@@ -946,6 +976,17 @@ function PianoApp() {
           </div>
         </div>
 
+        {fsAvailable && (
+          <div className="control-group">
+            <span className="control-label">Affichage</span>
+            <div className="voice-btns">
+              <button type="button" onClick={toggleFullscreen}>
+                {isFullscreen ? "Quitter plein écran" : "Plein écran"}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="control-group">
           <span className="control-label">Octave</span>
           <div className="octave-btns">
@@ -989,6 +1030,13 @@ function PianoApp() {
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<PianoApp />);
+    </script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("sw.js").catch(function () {});
+        });
+      }
     </script>
   </body>
 </html>

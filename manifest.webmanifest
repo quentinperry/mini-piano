@@ -1,0 +1,19 @@
+{
+  "name": "Mini Piano — l'outil des choristes",
+  "short_name": "Mini Piano",
+  "description": "Mini piano pour choristes : tessitures soprano, alto, ténor et basse, notation solfège, son de piano Web Audio.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "background_color": "#070a12",
+  "theme_color": "#0c1220",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

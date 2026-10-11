@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="18%" r="95%">
+      <stop offset="0%" stop-color="#1a2438"/>
+      <stop offset="100%" stop-color="#0c1220"/>
+    </radialGradient>
+    <linearGradient id="w" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#faf6ec"/>
+      <stop offset="100%" stop-color="#ddd2b8"/>
+    </linearGradient>
+    <linearGradient id="a" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#efdcae"/>
+      <stop offset="100%" stop-color="#c29a4e"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="64" y="132" width="384" height="268" rx="28" fill="#141a2c" stroke="#c9a962" stroke-width="6"/>
+  <rect x="96" y="168" width="92" height="196" rx="10" fill="url(#w)"/>
+  <rect x="210" y="168" width="92" height="196" rx="10" fill="url(#a)"/>
+  <rect x="324" y="168" width="92" height="196" rx="10" fill="url(#w)"/>
+  <rect x="178" y="168" width="42" height="118" rx="8" fill="#12151f"/>
+  <rect x="292" y="168" width="42" height="118" rx="8" fill="#12151f"/>
+</svg>

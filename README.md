@@ -20,17 +20,17 @@ notes en notation solfège (Do, Ré, Mi…), avec un son de piano synthétisé e
 ## Ajouter des morceaux intégrés
 
 Le menu « Morceaux intégrés » de l'app liste automatiquement les fichiers
-`.mid` / `.midi` du dossier `songs/` de la branche `gh-pages` — aucun
+`.mid` / `.midi` du dossier `public/songs/` de la branche `main` — aucun
 changement de code n'est nécessaire :
 
-1. Sur GitHub, basculez sur la branche `gh-pages` et ouvrez le dossier `songs/`.
+1. Sur GitHub, ouvrez le dossier `public/songs/` (branche `main`, la branche par défaut).
 2. « Add file » → « Upload files », déposez vos `.mid`, validez le commit.
-3. Le site se met à jour en une à deux minutes : le morceau apparaît dans le menu.
+3. Le morceau apparaît dans le menu en une à deux minutes, servi depuis le
+   dépôt sans attendre un nouveau déploiement.
 
-Le nom du fichier sert de libellé (« 01 - Kyrie (pupitres).mid » s'affichera
-« 01 - Kyrie (pupitres) ») ; tout fichier non-MIDI est ignoré. Un morceau
-écouté une fois est mis en cache par le service worker et reste disponible
-hors ligne.
+Le nom du fichier sert de libellé (« 01kyrie.mid » s'affichera « 01 Kyrie ») ;
+tout fichier non-MIDI est ignoré. Un morceau écouté une fois est mis en
+cache par le service worker et reste disponible hors ligne.
 
 ## Lancer en local
 
@@ -58,7 +58,7 @@ src/midi.js       Analyse et lecture de fichiers MIDI (pause, reprise, navigatio
 src/songs.js      Morceaux intégrés : découverte de la liste, chargement
 src/styles.css    Style visuel
 public/           Manifeste PWA, icône, service worker, morceaux (public/songs/)
-public/songs/    Dépôt des fichiers .mid proposés dans le menu (branche gh-pages : songs/)
+public/songs/    Fichiers .mid proposés dans le menu « Morceaux intégrés »
 ```
 
 Aucune dépendance externe au-delà de React : tout le son est généré

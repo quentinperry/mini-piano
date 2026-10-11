@@ -800,7 +800,7 @@ function PianoApp() {
       <header className="piano-header">
         <h1>Mini Piano</h1>
         <p className="piano-sub">
-          Choisissez votre pupitre (soprano, alto, ténor par défaut, basse) puis jouez la note pour vous caler. En paysage, toute la tessiture s'affiche, aigus compris.
+          Choisissez votre pupitre (soprano, alto, ténor par défaut, basse) puis jouez la note pour vous caler. En paysage, toute la tessiture s'affiche, aigus compris. Au premier chargement, appuyez deux fois sur une touche : la première autorise l'audio, la seconde joue.
         </p>
       </header>
 
@@ -808,8 +808,8 @@ function PianoApp() {
         {audioStatus === "running"
           ? "Audio actif"
           : audioStatus === "idle"
-            ? "Cliquez sur une touche pour activer le son"
-            : "Audio en veille : cliquez sur une touche pour l'activer"}
+            ? "Au début, appuyez deux fois sur une touche pour lancer le son"
+            : "Audio en veille : appuyez deux fois sur une touche pour lancer le son"}
       </div>
 
       <div className="piano-display">

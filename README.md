@@ -7,7 +7,7 @@ notes en notation solfège (Do, Ré, Mi…), avec un son de piano synthétisé e
 ## Fonctionnalités
 
 - Sélecteur de tessiture : **Soprano** (Do4–Do6), **Alto** (Sol3–Sol5), **Ténor** (Do3–Do5), **Basse** (Mi2–Mi4)
-- Clavier étendu automatiquement en paysage , compact en portrait (détection automatique de l'orientation)
+- Clavier étendu automatiquement en paysage, compact en portrait (détection automatique de l'orientation)
 - Notation solfège + équivalent international + fréquence affichée
 - Synthèse de type piano : partiels harmoniques, attaque percussive, décrément naturel (les graves résonnent plus longtemps)
 - Jouable à la souris, au toucher, ou au clavier **AZERTY** : rangée du bas pour les blanches (Q S D F G H J K L M W X C V B), rangée du haut pour les noires

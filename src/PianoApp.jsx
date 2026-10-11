@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Synth, ensureAudio, audioState } from "./audio";
 import { buildKeys, buildKeyMap, midiToFreq } from "./notes";
+import { parseMidi, createMidiPlayer } from "./midi";
 import { Piano } from "./Piano";
 
 // Tessitures chorales : base midi de chaque pupitre (mi = Do4).
@@ -57,9 +58,19 @@ export default function PianoApp() {
   const [audioStatus, setAudioStatus] = useState("idle");
   const [fsAvailable, setFsAvailable] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Fichier MIDI : analyse, piste choisie, vitesse, lecture en cours
+  const [midi, setMidi] = useState(null);
+  const [midiTrack, setMidiTrack] = useState("all");
+  const [midiSpeed, setMidiSpeed] = useState(1);
+  const [midiPlaying, setMidiPlaying] = useState(false);
+  const [midiActiveIds, setMidiActiveIds] = useState(() => new Set());
+  const [midiError, setMidiError] = useState(null);
 
   const synthRef = useRef(null);
   if (!synthRef.current) synthRef.current = new Synth();
+
+  const midiPlayerRef = useRef(null);
+  const midiHeldRef = useRef(new Set());
 
   const settingsRef = useRef({ volume, release });
   settingsRef.current = { volume, release };
@@ -70,10 +81,17 @@ export default function PianoApp() {
     [tessitura, octave, isWide]
   );
   const keyMap = useMemo(() => buildKeyMap(keys), [keys]);
+  const keyByMidi = useMemo(() => new Map(keys.map((k) => [k.midi, k])), [keys]);
 
   const chooseVoice = (id) => {
+    stopMidi(); // les surbrillances MIDI ne suivraient plus le clavier
     setVoiceId(id);
     setOctave(0); // on recale le clavier sur la nouvelle tessiture
+  };
+
+  const shiftOctave = (d) => {
+    stopMidi();
+    setOctave((o) => Math.min(2, Math.max(-2, o + d)));
   };
 
   const rangeText = `${keys[0].solfege} – ${keys[keys.length - 1].solfege}`;
@@ -191,6 +209,8 @@ export default function PianoApp() {
   useEffect(() => {
     return () => {
       synthRef.current.stopAll(0.05);
+      if (midiPlayerRef.current) midiPlayerRef.current.stop();
+      midiHeldRef.current.clear();
       keyHeld.current.clear();
       pointerHeld.current.clear();
     };
@@ -206,6 +226,114 @@ export default function PianoApp() {
   const handlePointerOff = (id, source) => {
     if (source === "pointer") pointerHeld.current.delete(id);
     noteOff(id);
+  };
+
+  // ---- Lecture d'un fichier MIDI : entraînement pupitre ----
+  // Le choriste ouvre un fichier (souvent une piste par pupitre), choisit
+  // sa voix, et suit en rythme : les touches s'illuminent, le son passe par
+  // le même synthé que le clavier.
+  const stopMidi = () => {
+    if (midiPlayerRef.current) {
+      midiPlayerRef.current.stop();
+      midiPlayerRef.current = null;
+    }
+    midiHeldRef.current.forEach((m) =>
+      synthRef.current.noteOff("midi-" + m, settingsRef.current.release)
+    );
+    midiHeldRef.current.clear();
+    setMidiActiveIds(new Set());
+    setMidiPlaying(false);
+  };
+
+  const handleMidiNoteOn = (midiNum, velocity) => {
+    midiHeldRef.current.add(midiNum);
+    const gain = settingsRef.current.volume * (0.35 + (0.65 * velocity) / 127);
+    synthRef.current.noteOn("midi-" + midiNum, midiToFreq(midiNum), { volume: gain });
+    const key = keyByMidi.get(midiNum);
+    if (key) {
+      setLastNote(key);
+      setMidiActiveIds((prev) => new Set(prev).add(key.id));
+    }
+  };
+
+  const handleMidiNoteOff = (midiNum) => {
+    midiHeldRef.current.delete(midiNum);
+    synthRef.current.noteOff("midi-" + midiNum, settingsRef.current.release);
+    const key = keyByMidi.get(midiNum);
+    if (key) {
+      setMidiActiveIds((prev) => {
+        if (!prev.has(key.id)) return prev;
+        const next = new Set(prev);
+        next.delete(key.id);
+        return next;
+      });
+    }
+  };
+
+  const startMidi = (speed = midiSpeed, track = midiTrack) => {
+    if (!midi) return;
+    const notes =
+      track === "all"
+        ? midi.tracks.flatMap((t) => t.notes)
+        : midi.tracks[Number(track)].notes;
+    if (!notes.length) return;
+    const events = [];
+    let maxT = 0;
+    for (const n of notes) {
+      events.push({ t: n.start, on: true, midi: n.midi, velocity: n.velocity });
+      events.push({ t: n.end, on: false, midi: n.midi });
+      if (n.end > maxT) maxT = n.end;
+    }
+    // au même instant, on coupe la note avant d'en rallumer une
+    events.sort((a, b) => a.t - b.t || (a.on ? 1 : 0) - (b.on ? 1 : 0));
+    ensureAudio();
+    midiPlayerRef.current = createMidiPlayer(events, maxT, {
+      onNoteOn: handleMidiNoteOn,
+      onNoteOff: handleMidiNoteOff,
+      onEnd: () => {
+        midiPlayerRef.current = null;
+        setMidiPlaying(false);
+        setMidiActiveIds(new Set());
+      },
+    });
+    midiPlayerRef.current.play(speed);
+    setMidiPlaying(true);
+  };
+
+  const toggleMidi = () => (midiPlaying ? stopMidi() : startMidi());
+
+  const changeMidiTrack = (e) => {
+    const track = e.target.value;
+    setMidiTrack(track);
+    if (midiPlaying) {
+      stopMidi();
+      startMidi(midiSpeed, track);
+    }
+  };
+
+  const changeMidiSpeed = (e) => {
+    const speed = Number(e.target.value);
+    setMidiSpeed(speed);
+    if (midiPlaying) {
+      stopMidi();
+      startMidi(speed, midiTrack);
+    }
+  };
+
+  const handleMidiFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ""; // permet de rouvrir le même fichier
+    if (!file) return;
+    stopMidi();
+    try {
+      const parsed = parseMidi(await file.arrayBuffer());
+      setMidi({ name: file.name, duration: parsed.duration, tracks: parsed.tracks });
+      setMidiTrack("all");
+      setMidiError(null);
+    } catch (err) {
+      setMidi(null);
+      setMidiError(String(err && err.message ? err.message : err));
+    }
   };
 
   return (
@@ -239,7 +367,7 @@ export default function PianoApp() {
 
       <Piano
         keys={keys}
-        activeIds={activeIds}
+        activeIds={midiActiveIds.size ? new Set([...activeIds, ...midiActiveIds]) : activeIds}
         onNoteOn={handlePointerOn}
         onNoteOff={handlePointerOff}
       />
@@ -276,11 +404,11 @@ export default function PianoApp() {
         <div className="control-group">
           <span className="control-label">Octave</span>
           <div className="octave-btns">
-            <button type="button" onClick={() => setOctave((o) => Math.max(-2, o - 1))} aria-label="Octave en dessous">
+            <button type="button" onClick={() => shiftOctave(-1)} aria-label="Octave en dessous">
               −
             </button>
             <span className="octave-value">{octave >= 0 ? `+${octave}` : octave}</span>
-            <button type="button" onClick={() => setOctave((o) => Math.min(2, o + 1))} aria-label="Octave au-dessus">
+            <button type="button" onClick={() => shiftOctave(1)} aria-label="Octave au-dessus">
               +
             </button>
           </div>
@@ -308,6 +436,50 @@ export default function PianoApp() {
             value={release}
             onChange={(e) => setRelease(Number(e.target.value))}
           />
+        </div>
+
+        <div className="control-group">
+          <span className="control-label">Fichier MIDI</span>
+          <div className="voice-btns">
+            <label className="midi-btn">
+              Ouvrir un MIDI…
+              <input
+                type="file"
+                accept=".mid,.midi,audio/midi"
+                hidden
+                onChange={handleMidiFile}
+              />
+            </label>
+          </div>
+          {midi && (
+            <>
+              <span className="midi-file">
+                {midi.name} · {Math.floor(midi.duration / 60)}:
+                {String(Math.floor(midi.duration % 60)).padStart(2, "0")}
+              </span>
+              <div className="voice-btns midi-row">
+                <select value={midiTrack} onChange={changeMidiTrack} aria-label="Piste à jouer">
+                  <option value="all">Toutes les pistes</option>
+                  {midi.tracks.map((t, i) => (
+                    <option key={i} value={String(i)}>
+                      {t.name} ({t.notes.length})
+                    </option>
+                  ))}
+                </select>
+                <select value={midiSpeed} onChange={changeMidiSpeed} aria-label="Vitesse de lecture">
+                  {[0.5, 0.75, 1, 1.25, 1.5].map((s) => (
+                    <option key={s} value={String(s)}>
+                      ×{s}
+                    </option>
+                  ))}
+                </select>
+                <button type="button" onClick={toggleMidi}>
+                  {midiPlaying ? "Stop" : "Lire"}
+                </button>
+              </div>
+            </>
+          )}
+          {midiError && <span className="midi-file midi-error">{midiError}</span>}
         </div>
       </div>
     </div>

@@ -267,8 +267,13 @@ export default function PianoApp() {
 
   const handleMidiNoteOn = (midiNum, velocity, gainScale = 1) => {
     midiHeldRef.current.add(midiNum);
+    // Compression de vélocité : les fichiers de notation encodent leurs
+    // nuances de façon brutale (chœur souvent à 127 = forte constante).
+    // On remappe 0-127 sur 48-105 pour garder les nuances audibles sans
+    // coups de marteau : un ff ne sonne plus que ~1,5 fois plus fort qu'un pp.
+    const compressed = 48 + (velocity * 57) / 127;
     const gain =
-      settingsRef.current.volume * (0.35 + (0.65 * velocity) / 127) * gainScale;
+      settingsRef.current.volume * (0.35 + (0.65 * compressed) / 127) * gainScale;
     // 3 partiels au lieu de 5 : largement assez pour se caler, et un tiers de
     // charge en moins sur le processeur quand le tutti joue.
     synthRef.current.noteOn("midi-" + midiNum, midiToFreq(midiNum), {

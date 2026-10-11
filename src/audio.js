@@ -1,6 +1,7 @@
 // Synthèse type piano : partiels harmoniques avec inharmonicité légère,
 // attaque percussive et décrément naturel (graves plus longs que les aigus).
 let ctx = null;
+let masterBus = null;
 let silentEl = null;
 
 // Génère un WAV d'une seconde de silence (8 kHz, 8 bits) sans fichier externe.
@@ -35,6 +36,12 @@ function makeSilentWavUrl() {
 // bascule la session audio en mode « lecture », qui ignore ce commutateur.
 // Sans effet sur les navigateurs qui ne mute pas Web Audio (Android, desktop).
 function bypassSilentSwitch() {
+  // Uniquement iOS : le commutateur de sonnerie y coupe Web Audio. Ailleurs
+  // (Android, desktop) il ne ferait qu'occuper un pipeline média pour rien.
+  const isIOS =
+    /iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (!isIOS) return;
   try {
     if (!silentEl) {
       silentEl = document.createElement("audio");
@@ -58,6 +65,20 @@ export function ensureAudio() {
       // Profil "interactive" : tampons de sortie les plus courts possible,
       // pour minimiser la latence entre l'appui et le son.
       ctx = new window.AudioContext({ latencyHint: "interactive" });
+      // Bus de sortie : limiteur doux (compresseur à fort ratio) qui garde
+      // le signal sous 0 dB même quand des dizaines de voix se superposent.
+      // Sans lui, un tutti orchestral sature durement (grésillement) et le
+      // moteur audio peut s'effondrer sur mobile.
+      const limiter = ctx.createDynamicsCompressor();
+      limiter.threshold.value = -18;
+      limiter.knee.value = 24;
+      limiter.ratio.value = 12;
+      limiter.attack.value = 0.003;
+      limiter.release.value = 0.25;
+      masterBus = ctx.createGain();
+      masterBus.gain.value = 0.9;
+      masterBus.connect(limiter);
+      limiter.connect(ctx.destination);
     } catch (err) {
       ctx = null;
       return null;
@@ -92,13 +113,24 @@ const PARTIALS = [
 export class Synth {
   constructor() {
     this.active = new Map();
+    // Plafond de polyphonie : au-delà, on vole la voix la plus ancienne.
+    // Les tutti orchestraux (fichiers MIDI complets) dépassent vite les
+    // capacités d'un mobile, jusqu'au grésillement voire au crash.
+    this.maxVoices = 32;
   }
 
-  noteOn(id, freq, { volume = 0.6 } = {}) {
+  noteOn(id, freq, { volume = 0.6, partials = PARTIALS.length } = {}) {
     if (this.active.has(id)) return true;
     const c = ensureAudio();
     if (!c) return false;
     const now = c.currentTime;
+
+    // Vol de voix : la Map conserve l'ordre d'insertion, la plus ancienne
+    // passe la première. Un fondu très court évite les claquements.
+    while (this.active.size >= this.maxVoices) {
+      const oldest = this.active.keys().next().value;
+      this.noteOff(oldest, 0.04);
+    }
 
     const master = c.createGain();
     const peak = Math.max(0.001, volume);
@@ -112,7 +144,10 @@ export class Synth {
     master.gain.setTargetAtTime(Math.max(peak * 0.18, 0.001), now + 0.003, decayTime / 4);
 
     const oscs = [];
-    PARTIALS.forEach((p, i) => {
+    // Rendu allégé possible : la lecture MIDI peut demander moins de partiels
+    // (3 suffisent pour se caler), ce qui soulage nettement le processeur
+    // sur mobile en tutti.
+    PARTIALS.slice(0, Math.max(1, Math.min(PARTIALS.length, partials))).forEach((p, i) => {
       try {
         const osc = c.createOscillator();
         osc.type = "sine";
@@ -130,7 +165,7 @@ export class Synth {
       }
     });
 
-    master.connect(c.destination);
+    master.connect(masterBus || c.destination);
     // Filet de sécurité : on coupe tout après la queue naturelle
     oscs.forEach((o) => {
       try {

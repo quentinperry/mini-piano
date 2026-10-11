@@ -265,10 +265,16 @@ export default function PianoApp() {
     setMidiProgress(midiPosRef.current);
   };
 
-  const handleMidiNoteOn = (midiNum, velocity) => {
+  const handleMidiNoteOn = (midiNum, velocity, gainScale = 1) => {
     midiHeldRef.current.add(midiNum);
-    const gain = settingsRef.current.volume * (0.35 + (0.65 * velocity) / 127);
-    synthRef.current.noteOn("midi-" + midiNum, midiToFreq(midiNum), { volume: gain });
+    const gain =
+      settingsRef.current.volume * (0.35 + (0.65 * velocity) / 127) * gainScale;
+    // 3 partiels au lieu de 5 : largement assez pour se caler, et un tiers de
+    // charge en moins sur le processeur quand le tutti joue.
+    synthRef.current.noteOn("midi-" + midiNum, midiToFreq(midiNum), {
+      volume: gain,
+      partials: 3,
+    });
     const key = keyByMidi.get(midiNum);
     if (key) {
       setLastNote(key);
@@ -306,9 +312,15 @@ export default function PianoApp() {
     }
     // au même instant, on coupe la note avant d'en rallumer une
     events.sort((a, b) => a.t - b.t || (a.on ? 1 : 0) - (b.on ? 1 : 0));
+    // En tutti, la somme des pistes saturerait vite : on divise le gain par
+    // la racine du nombre de pistes, le limiteur de sortie fait le reste.
+    const gainScale =
+      track === "all" && midi.tracks.length > 1
+        ? 1 / Math.sqrt(midi.tracks.length)
+        : 1;
     ensureAudio();
     midiPlayerRef.current = createMidiPlayer(events, maxT, {
-      onNoteOn: handleMidiNoteOn,
+      onNoteOn: (m, v) => handleMidiNoteOn(m, v, gainScale),
       onNoteOff: handleMidiNoteOff,
       onEnd: () => {
         midiPlayerRef.current = null;

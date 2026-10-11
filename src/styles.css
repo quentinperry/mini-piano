@@ -139,6 +139,11 @@
   padding-bottom: 10px;
   gap: 4px;
   transition: background 0.06s ease;
+  /* iOS : pas de sélection ni de loupe sur les touches */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
 }
 
 .white-key:active,
@@ -166,6 +171,11 @@
   justify-content: center;
   padding-bottom: 10px;
   transition: background 0.06s ease;
+  /* iOS : pas de sélection ni de loupe sur les touches */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
 }
 
 .black-key:active,

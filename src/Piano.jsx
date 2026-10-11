@@ -1,6 +1,24 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 
 export function Piano({ keys, activeIds, onNoteOn, onNoteOff }) {
+  const keysRef = useRef(null);
+
+  // iOS : l'appui long sur une touche déclenche la loupe / le zoom de
+  // sélection. On bloque l'événement natif « touchstart » (React l'attache
+  // en passif, d'où l'écouteur natif non passif) et le menu contextuel.
+  // Les événements pointeur utilisés pour jouer ne sont pas affectés.
+  useEffect(() => {
+    const el = keysRef.current;
+    if (!el) return;
+    const stop = (e) => e.preventDefault();
+    el.addEventListener("touchstart", stop, { passive: false });
+    el.addEventListener("contextmenu", stop);
+    return () => {
+      el.removeEventListener("touchstart", stop);
+      el.removeEventListener("contextmenu", stop);
+    };
+  }, []);
+
   const whites = useMemo(() => keys.filter((k) => !k.isBlack), [keys]);
   const blacks = useMemo(() => keys.filter((k) => k.isBlack), [keys]);
   const whiteW = 100 / whites.length;
@@ -8,7 +26,7 @@ export function Piano({ keys, activeIds, onNoteOn, onNoteOff }) {
 
   return (
     <div className="piano">
-      <div className="piano-keys">
+      <div className="piano-keys" ref={keysRef}>
         {whites.map((k) => (
           <button
             key={k.id}

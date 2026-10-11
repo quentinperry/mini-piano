@@ -1114,24 +1114,32 @@ function createMidiPlayer(events, duration, { onNoteOn, onNoteOff, onEnd }) {
 }
 
 // ===== songs.js =====
-// Morceaux intégrés : le dossier « songs/ » du dépôt GitHub qui héberge le
-// site. Celui qui gère le répertoire y dépose simplement des fichiers .mid
-// (upload via l'interface GitHub) — aucun réglage côté code. L'app découvre
-// la liste via l'API GitHub (dépôt public), puis charge le morceau choisi
-// depuis le site lui-même : même origine, donc mis en cache par le service
-// worker et rejouable hors ligne après une première écoute.
+// Morceaux intégrés : le dossier « public/songs/ » de la branche `main` du
+// dépôt GitHub héberge les fichiers. Celui qui gère le répertoire y dépose
+// simplement des .mid via l'interface GitHub — aucun réglage côté code. L'app
+// découvre la liste via l'API GitHub (dépôt public), puis charge le morceau
+// choisi depuis raw.githubusercontent.com : les fichiers sont servis dès
+// l'upload, sans attendre le déploiement Pages, et le service worker les met
+// en cache après une première écoute pour un usage hors ligne.
 
 const SONGS_API_URL =
-  "https://api.github.com/repos/quentinperry/mini-piano/contents/songs?ref=gh-pages";
+  "https://api.github.com/repos/quentinperry/mini-piano/contents/public/songs?ref=main";
+const SONGS_RAW_BASE =
+  "https://raw.githubusercontent.com/quentinperry/mini-piano/main/public/songs/";
 const SONGS_CACHE_KEY = "mini-piano-songs-v1";
 const SONGS_CACHE_MAX_AGE = 24 * 3600 * 1000; // une relecture par jour suffit
 
-// Libellé lisible à partir du nom de fichier : celui qui dépose les fichiers
-// maîtrise l'affichage, espaces et accents compris.
+// Libellé lisible à partir du nom de fichier : « 01kyrie.mid » s'affichera
+// « 01 Kyrie ». Celui qui dépose les fichiers garde la main : espaces,
+// accents et tirets dans le nom sont respectés tels quels.
 function titleFromFileName(name) {
   return name
     .replace(/\.(mid|midi)$/i, "")
     .replace(/_+/g, " ")
+    .replace(/(\d)(?=[A-Za-z\u00c0-\u017f])/g, "$1 ")
+    .split(" ")
+    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+    .join(" ")
     .trim();
 }
 
@@ -1167,9 +1175,9 @@ async function listBuiltInSongs() {
   }
 }
 
-// Charge le fichier MIDI d'un morceau intégré, depuis le site lui-même.
+// Charge le fichier MIDI d'un morceau intégré, depuis le dépôt.
 async function fetchBuiltInSong(fileName) {
-  const res = await fetch("songs/" + encodeURIComponent(fileName));
+  const res = await fetch(SONGS_RAW_BASE + encodeURIComponent(fileName));
   if (!res.ok) {
     throw new Error("Impossible de charger ce morceau (" + res.status + ").");
   }

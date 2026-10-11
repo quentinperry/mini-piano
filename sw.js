@@ -1,5 +1,5 @@
 // Service worker minimal : rend la PWA installable et disponible hors ligne.
-const CACHE = "mini-piano-v4";
+const CACHE = "mini-piano-v5";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", (e) => {

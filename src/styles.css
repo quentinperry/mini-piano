@@ -1,0 +1,354 @@
+.piano-app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 32px 16px;
+  background:
+    radial-gradient(900px 480px at 50% -80px, rgba(201, 169, 98, 0.16), transparent 70%),
+    radial-gradient(1400px 900px at 50% 120%, rgba(23, 34, 66, 0.85), transparent 60%),
+    linear-gradient(180deg, #0c1220 0%, #0a0e18 60%, #070a12 100%);
+  color: #ece5d8;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Centrage vertical sans troncature : quand le contenu dépasse,
+   la page défile naturellement au lieu de couper haut et bas. */
+.piano-app > :first-child {
+  margin-top: auto;
+}
+
+.piano-app > :last-child {
+  margin-bottom: auto;
+}
+
+.piano-header {
+  text-align: center;
+}
+
+.piano-header h1 {
+  margin: 0;
+  font-family: "Didot", "Bodoni MT", "Playfair Display", Georgia, "Times New Roman", serif;
+  font-size: 30px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.42em;
+  color: #d9c39a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.piano-header h1::before,
+.piano-header h1::after {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #b08d4f, transparent);
+}
+
+.piano-sub {
+  margin: 10px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 14px;
+  color: #b8ae97;
+  max-width: 560px;
+}
+
+.audio-badge {
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 4px 14px;
+  border: 1px solid rgba(201, 169, 98, 0.3);
+  background: rgba(201, 169, 98, 0.08);
+  color: #cbbfa4;
+}
+
+.audio-badge.audio-running {
+  border-color: rgba(150, 200, 150, 0.4);
+  background: rgba(150, 200, 150, 0.1);
+  color: #a9d8a9;
+}
+
+.audio-badge.audio-suspended,
+.audio-badge.audio-absent {
+  border-color: rgba(224, 168, 96, 0.5);
+  background: rgba(224, 168, 96, 0.1);
+  color: #e0a860;
+}
+
+.piano-display {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  height: 48px;
+}
+
+.piano-display-note {
+  font-family: "Didot", "Bodoni MT", Georgia, serif;
+  font-size: 44px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  min-width: 84px;
+  text-align: center;
+  color: #d9b878;
+  text-shadow: 0 0 28px rgba(217, 184, 120, 0.25);
+}
+
+.piano-display-freq {
+  font-size: 13px;
+  color: #a99f86;
+  font-variant-numeric: tabular-nums;
+}
+
+.piano {
+  width: 100%;
+  max-width: 1080px;
+  background: linear-gradient(180deg, #141a2c 0%, #0c101d 100%);
+  border: 1px solid rgba(201, 169, 98, 0.35);
+  border-radius: 12px;
+  padding: 18px 18px 22px;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(217, 184, 120, 0.18);
+}
+
+.piano-keys {
+  position: relative;
+  display: flex;
+  height: clamp(150px, 32vh, 230px);
+  user-select: none;
+  touch-action: none;
+}
+
+.white-key {
+  position: relative;
+  flex: 1 1 0;
+  margin: 0 2px;
+  border: none;
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(180deg, #faf6ec 0%, #f0e9d8 80%, #ddd2b8 100%);
+  box-shadow: inset 0 -6px 8px rgba(90, 70, 30, 0.14), 0 3px 4px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 10px;
+  gap: 4px;
+  transition: background 0.06s ease;
+}
+
+.white-key:active,
+.white-key.is-active {
+  background: linear-gradient(180deg, #efdcae 0%, #dcbc7c 70%, #c29a4e 100%);
+  box-shadow: inset 0 4px 10px rgba(110, 80, 20, 0.35);
+  transform: translateY(1px);
+}
+
+.black-key {
+  position: absolute;
+  top: 0;
+  height: 60%;
+  z-index: 2;
+  border: none;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(180deg, #2a3040 0%, #12151f 55%, #05070c 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(217, 184, 120, 0.3),
+    inset 0 -5px 6px rgba(255, 255, 255, 0.06),
+    0 4px 8px rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 10px;
+  transition: background 0.06s ease;
+}
+
+.black-key:active,
+.black-key.is-active {
+  background: linear-gradient(180deg, #d9b878 0%, #a67c3a 60%, #6d4d1c 100%);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.5);
+  transform: translateY(1px);
+}
+
+.key-note {
+  font-size: 10px;
+  font-weight: 600;
+  color: #9a8f74;
+}
+
+.key-bind {
+  font-size: 10px;
+  font-weight: 700;
+  color: #b3a88c;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.black-key .key-bind {
+  color: #d8cdb4;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.piano-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #a08d5f;
+}
+
+.octave-btns,
+.wave-btns,
+.voice-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.octave-btns button,
+.wave-btns button,
+.voice-btns button {
+  background: transparent;
+  color: #d8cdb4;
+  border: 1px solid rgba(201, 169, 98, 0.35);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.octave-btns button:hover,
+.wave-btns button:hover,
+.voice-btns button:hover {
+  border-color: rgba(217, 184, 120, 0.7);
+  color: #e6d5ae;
+}
+
+.wave-btns button.is-selected,
+.voice-btns button.is-selected {
+  background: linear-gradient(180deg, #e3c98e 0%, #c39c55 100%);
+  border-color: #c39c55;
+  color: #1b1408;
+  font-weight: 600;
+}
+
+.octave-value {
+  min-width: 32px;
+  text-align: center;
+  font-weight: 600;
+  color: #d8cdb4;
+  font-variant-numeric: tabular-nums;
+}
+
+.piano-range {
+  font-size: 11px;
+  color: #b8ae97;
+  font-variant-numeric: tabular-nums;
+}
+
+.piano-controls input[type="range"] {
+  width: 140px;
+  accent-color: #c9a962;
+}
+
+.piano-credit {
+  margin: 4px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #8a7f66;
+}
+
+/* Gabarit compact quand le panneau est large mais peu haut
+   (paysage, canvas au-dessus de la conversation) */
+@media (min-width: 560px) and (max-height: 620px) {
+  .piano-app {
+    gap: 10px;
+    padding: 12px 16px;
+  }
+
+  .piano-header h1 {
+    font-size: 16px;
+    letter-spacing: 0.3em;
+    gap: 12px;
+  }
+
+  .piano-header h1::before,
+  .piano-header h1::after {
+    width: 32px;
+  }
+
+  .piano-sub,
+  .piano-credit {
+    display: none;
+  }
+
+  .audio-badge {
+    font-size: 10px;
+    padding: 2px 10px;
+  }
+
+  .piano-display {
+    height: 34px;
+  }
+
+  .piano-display-note {
+    font-size: 26px;
+    min-width: 64px;
+  }
+
+  .piano {
+    padding: 10px 10px 12px;
+  }
+
+  .piano-keys {
+    height: clamp(110px, 30vh, 170px);
+  }
+
+  .white-key {
+    border-radius: 0 0 6px 6px;
+  }
+
+  .key-note {
+    font-size: 9px;
+  }
+
+  .key-bind {
+    font-size: 8px;
+    padding: 0 4px;
+  }
+
+  .piano-controls {
+    gap: 14px;
+  }
+
+  .piano-controls input[type="range"] {
+    width: 110px;
+  }
+}

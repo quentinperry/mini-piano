@@ -786,47 +786,7 @@ function Piano({ keys, activeIds, onNoteOn, onNoteOff }) {
   );
 }
 
-// ===== PianoApp.jsx =====
-// Tessitures chorales : base midi de chaque pupitre (mi = Do4).
-// Ténor par défaut.
-const TESSITURES = [
-  { id: "soprano", label: "Soprano", base: 60 }, // Do4 – Do6 en paysage
-  { id: "alto", label: "Alto", base: 55 },       // Sol3 – Sol5
-  { id: "tenor", label: "Ténor", base: 48 },     // Do3 – Do5
-  { id: "basse", label: "Basse", base: 40 },     // Mi2 – Mi4
-];
-const DEFAULT_TESSITURE = "tenor";
-// Portrait : 17 demi-tons. Paysage : 25 demi-tons (toute la tessiture).
-const NARROW_COUNT = 17;
-const WIDE_COUNT = 25;
-
-// Mesure la place réellement disponible via un ResizeObserver.
-// Plus fiable que l'orientation annoncée par l'iframe (qui peut être fausse
-// ou flotter pendant une rotation) : portrait ou paysage se déduit du
-// rapport largeur/hauteur réellement rendu.
-function useContainerSize() {
-  const ref = useRef(null);
-  const [size, setSize] = useState(() => ({
-    width: typeof window !== "undefined" ? window.innerWidth : 0,
-    height: typeof window !== "undefined" ? window.innerHeight : 0,
-  }));
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const measure = () =>
-      setSize({ width: el.clientWidth, height: el.clientHeight });
-    measure();
-    if (typeof ResizeObserver === "function") {
-      const ro = new ResizeObserver(measure);
-      ro.observe(el);
-      return () => ro.disconnect();
-    }
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
-  return { ref, size };
-}
-
+// ===== midi.js =====
 // Lecture de fichiers MIDI standard (SMF, formats 0/1/2) pour l'entraînement
 // des choristes : nom des pistes, notes (hauteur, début, fin, vélocité) et
 // carte de tempo. Analyse volontairement minimale, sans dépendance externe :

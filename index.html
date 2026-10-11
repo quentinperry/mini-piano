@@ -423,6 +423,27 @@
   color: #e6d5ae;
 }
 
+/* Morceaux intégrés : même style que les listes du groupe MIDI. */
+.voice-btns select {
+  background: #0c101d;
+  color: #d8cdb4;
+  border: 1px solid rgba(201, 169, 98, 0.35);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  max-width: 220px;
+  cursor: pointer;
+}
+
+.voice-btns select:disabled {
+  opacity: 0.6;
+}
+
+.voice-btns select:hover {
+  border-color: rgba(217, 184, 120, 0.7);
+}
+
 .midi-row {
   flex-wrap: wrap;
   justify-content: center;
@@ -1092,6 +1113,69 @@ function createMidiPlayer(events, duration, { onNoteOn, onNoteOff, onEnd }) {
   };
 }
 
+// ===== songs.js =====
+// Morceaux intégrés : le dossier « songs/ » du dépôt GitHub qui héberge le
+// site. Celui qui gère le répertoire y dépose simplement des fichiers .mid
+// (upload via l'interface GitHub) — aucun réglage côté code. L'app découvre
+// la liste via l'API GitHub (dépôt public), puis charge le morceau choisi
+// depuis le site lui-même : même origine, donc mis en cache par le service
+// worker et rejouable hors ligne après une première écoute.
+
+const SONGS_API_URL =
+  "https://api.github.com/repos/quentinperry/mini-piano/contents/songs?ref=gh-pages";
+const SONGS_CACHE_KEY = "mini-piano-songs-v1";
+const SONGS_CACHE_MAX_AGE = 24 * 3600 * 1000; // une relecture par jour suffit
+
+// Libellé lisible à partir du nom de fichier : celui qui dépose les fichiers
+// maîtrise l'affichage, espaces et accents compris.
+function titleFromFileName(name) {
+  return name
+    .replace(/\.(mid|midi)$/i, "")
+    .replace(/_+/g, " ")
+    .trim();
+}
+
+// Liste des morceaux disponibles. En cas d'échec (hors ligne, quota API),
+// on retombe sur la dernière liste connue, stockée localement.
+async function listBuiltInSongs() {
+  try {
+    const res = await fetch(SONGS_API_URL, {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const entries = await res.json();
+    const list = entries
+      .filter((e) => e.type === "file" && /\.midi?$/i.test(e.name))
+      .map((e) => ({ name: e.name, title: titleFromFileName(e.name) }))
+      .sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true }));
+    try {
+      localStorage.setItem(SONGS_CACHE_KEY, JSON.stringify({ at: Date.now(), list }));
+    } catch (err) {
+      /* stockage indisponible (mode privé, quota) : sans conséquence */
+    }
+    return list;
+  } catch (err) {
+    try {
+      const raw = JSON.parse(localStorage.getItem(SONGS_CACHE_KEY));
+      if (raw && raw.list && Date.now() - raw.at < SONGS_CACHE_MAX_AGE) {
+        return raw.list;
+      }
+    } catch (err2) {
+      /* pas de liste connue : on remonte l'erreur */
+    }
+    throw err;
+  }
+}
+
+// Charge le fichier MIDI d'un morceau intégré, depuis le site lui-même.
+async function fetchBuiltInSong(fileName) {
+  const res = await fetch("songs/" + encodeURIComponent(fileName));
+  if (!res.ok) {
+    throw new Error("Impossible de charger ce morceau (" + res.status + ").");
+  }
+  return res.arrayBuffer();
+}
+
 // Tessitures chorales : base midi de chaque pupitre (mi = Do4).
 // Ténor par défaut.
 const TESSITURES = [
@@ -1159,6 +1243,11 @@ function PianoApp() {
   const [midiError, setMidiError] = useState(null);
   // Position dans le morceau (seconde), mémorisée d'une pause à l'autre
   const [midiProgress, setMidiProgress] = useState(0);
+  // Morceaux intégrés : liste découverte au chargement (null = en cours),
+  // morceau sélectionné dans le menu, morceau en cours de chargement
+  const [songs, setSongs] = useState(null);
+  const [selectedSong, setSelectedSong] = useState("");
+  const [songLoading, setSongLoading] = useState(null);
 
   const synthRef = useRef(null);
   if (!synthRef.current) synthRef.current = new Synth();
@@ -1431,6 +1520,23 @@ function PianoApp() {
     return () => clearInterval(id);
   }, [midiPlaying]);
 
+  // Morceaux intégrés : liste découverte au démarrage. En cas d'échec
+  // (hors ligne, quota), le menu ne s'affiche pas et l'ouverture manuelle
+  // d'un fichier reste disponible.
+  useEffect(() => {
+    let alive = true;
+    listBuiltInSongs()
+      .then((list) => {
+        if (alive) setSongs(list);
+      })
+      .catch(() => {
+        if (alive) setSongs([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   // Changer de piste ou de vitesse garde la position : on poursuit au même
   // endroit du morceau, comme le ferait un lecteur audio.
   const changeMidiTrack = (e) => {
@@ -1458,6 +1564,7 @@ function PianoApp() {
     pauseMidi();
     midiPosRef.current = 0; // nouveau fichier : on repart du début
     setMidiProgress(0);
+    setSelectedSong(""); // le menu des morceaux intégrés ne suit plus
     try {
       const parsed = parseMidi(await file.arrayBuffer());
       setMidi({ name: file.name, duration: parsed.duration, tracks: parsed.tracks });
@@ -1466,6 +1573,35 @@ function PianoApp() {
     } catch (err) {
       setMidi(null);
       setMidiError(String(err && err.message ? err.message : err));
+    }
+  };
+
+  // Morceau intégré : même chemin que l'ouverture d'un fichier, seul le
+  // transport change (téléchargement depuis le site au lieu d'un upload).
+  const chooseBuiltInSong = async (e) => {
+    const fileName = e.target.value;
+    setSelectedSong(fileName);
+    if (!fileName) return;
+    pauseMidi();
+    midiPosRef.current = 0;
+    setMidiProgress(0);
+    setMidi(null);
+    setMidiError(null);
+    setSongLoading(fileName);
+    try {
+      const parsed = parseMidi(await fetchBuiltInSong(fileName));
+      const song = (songs || []).find((s) => s.name === fileName);
+      setMidi({
+        name: song ? song.title : fileName,
+        duration: parsed.duration,
+        tracks: parsed.tracks,
+      });
+      setMidiTrack("all");
+    } catch (err) {
+      setMidi(null);
+      setMidiError(String(err && err.message ? err.message : err));
+    } finally {
+      setSongLoading(null);
     }
   };
 
@@ -1584,6 +1720,30 @@ function PianoApp() {
               />
             </label>
           </div>
+          {songs === null && (
+            <div className="voice-btns">
+              <select disabled aria-label="Morceaux intégrés">
+                <option>Liste des morceaux…</option>
+              </select>
+            </div>
+          )}
+          {songs !== null && songs.length > 0 && (
+            <div className="voice-btns">
+              <select
+                value={selectedSong}
+                onChange={chooseBuiltInSong}
+                aria-label="Morceaux intégrés"
+              >
+                <option value="">Morceaux intégrés…</option>
+                {songs.map((s) => (
+                  <option key={s.name} value={s.name}>
+                    {s.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {songLoading && <span className="midi-file">Chargement du morceau…</span>}
           {midi && (
             <>
               <span className="midi-file">

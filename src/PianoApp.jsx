@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Synth, ensureAudio, audioState } from "./audio";
 import { buildKeys, buildKeyMap, midiToFreq } from "./notes";
 import { parseMidi, createMidiPlayer } from "./midi";
+import { listBuiltInSongs, fetchBuiltInSong } from "./songs";
 import { Piano } from "./Piano";
 
 // Tessitures chorales : base midi de chaque pupitre (mi = Do4).
@@ -71,6 +72,11 @@ export default function PianoApp() {
   const [midiError, setMidiError] = useState(null);
   // Position dans le morceau (seconde), mémorisée d'une pause à l'autre
   const [midiProgress, setMidiProgress] = useState(0);
+  // Morceaux intégrés : liste découverte au chargement (null = en cours),
+  // morceau sélectionné dans le menu, morceau en cours de chargement
+  const [songs, setSongs] = useState(null);
+  const [selectedSong, setSelectedSong] = useState("");
+  const [songLoading, setSongLoading] = useState(null);
 
   const synthRef = useRef(null);
   if (!synthRef.current) synthRef.current = new Synth();
@@ -343,6 +349,23 @@ export default function PianoApp() {
     return () => clearInterval(id);
   }, [midiPlaying]);
 
+  // Morceaux intégrés : liste découverte au démarrage. En cas d'échec
+  // (hors ligne, quota), le menu ne s'affiche pas et l'ouverture manuelle
+  // d'un fichier reste disponible.
+  useEffect(() => {
+    let alive = true;
+    listBuiltInSongs()
+      .then((list) => {
+        if (alive) setSongs(list);
+      })
+      .catch(() => {
+        if (alive) setSongs([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   // Changer de piste ou de vitesse garde la position : on poursuit au même
   // endroit du morceau, comme le ferait un lecteur audio.
   const changeMidiTrack = (e) => {
@@ -370,6 +393,7 @@ export default function PianoApp() {
     pauseMidi();
     midiPosRef.current = 0; // nouveau fichier : on repart du début
     setMidiProgress(0);
+    setSelectedSong(""); // le menu des morceaux intégrés ne suit plus
     try {
       const parsed = parseMidi(await file.arrayBuffer());
       setMidi({ name: file.name, duration: parsed.duration, tracks: parsed.tracks });
@@ -378,6 +402,35 @@ export default function PianoApp() {
     } catch (err) {
       setMidi(null);
       setMidiError(String(err && err.message ? err.message : err));
+    }
+  };
+
+  // Morceau intégré : même chemin que l'ouverture d'un fichier, seul le
+  // transport change (téléchargement depuis le site au lieu d'un upload).
+  const chooseBuiltInSong = async (e) => {
+    const fileName = e.target.value;
+    setSelectedSong(fileName);
+    if (!fileName) return;
+    pauseMidi();
+    midiPosRef.current = 0;
+    setMidiProgress(0);
+    setMidi(null);
+    setMidiError(null);
+    setSongLoading(fileName);
+    try {
+      const parsed = parseMidi(await fetchBuiltInSong(fileName));
+      const song = (songs || []).find((s) => s.name === fileName);
+      setMidi({
+        name: song ? song.title : fileName,
+        duration: parsed.duration,
+        tracks: parsed.tracks,
+      });
+      setMidiTrack("all");
+    } catch (err) {
+      setMidi(null);
+      setMidiError(String(err && err.message ? err.message : err));
+    } finally {
+      setSongLoading(null);
     }
   };
 
@@ -496,6 +549,30 @@ export default function PianoApp() {
               />
             </label>
           </div>
+          {songs === null && (
+            <div className="voice-btns">
+              <select disabled aria-label="Morceaux intégrés">
+                <option>Liste des morceaux…</option>
+              </select>
+            </div>
+          )}
+          {songs !== null && songs.length > 0 && (
+            <div className="voice-btns">
+              <select
+                value={selectedSong}
+                onChange={chooseBuiltInSong}
+                aria-label="Morceaux intégrés"
+              >
+                <option value="">Morceaux intégrés…</option>
+                {songs.map((s) => (
+                  <option key={s.name} value={s.name}>
+                    {s.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {songLoading && <span className="midi-file">Chargement du morceau…</span>}
           {midi && (
             <>
               <span className="midi-file">

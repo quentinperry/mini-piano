@@ -405,6 +405,27 @@
   color: #e6d5ae;
 }
 
+/* Morceaux intégrés : même style que les listes du groupe MIDI. */
+.voice-btns select {
+  background: #0c101d;
+  color: #d8cdb4;
+  border: 1px solid rgba(201, 169, 98, 0.35);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  max-width: 220px;
+  cursor: pointer;
+}
+
+.voice-btns select:disabled {
+  opacity: 0.6;
+}
+
+.voice-btns select:hover {
+  border-color: rgba(217, 184, 120, 0.7);
+}
+
 .midi-row {
   flex-wrap: wrap;
   justify-content: center;

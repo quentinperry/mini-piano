@@ -9,12 +9,28 @@ notes en notation solfège (Do, Ré, Mi…), avec un son de piano synthétisé e
 - Sélecteur de tessiture : **Soprano** (Do4–Do6), **Alto** (Sol3–Sol5), **Ténor** (Do3–Do5), **Basse** (Mi2–Mi4)
 - Clavier étendu automatiquement en paysage, compact en portrait (détection automatique de l'orientation)
 - Lecture de fichiers MIDI : choisir sa piste (son pupitre), vitesse ×0,5 à ×1,5, touches illuminées en rythme, pause/reprise à la position courante et curseur de navigation dans le morceau
+- Morceaux intégrés : le menu « Morceaux intégrés » propose les fichiers MIDI déposés dans le dossier `songs/` du dépôt (voir « Ajouter des morceaux intégrés »)
 - Notation solfège + équivalent international + fréquence affichée
 - Synthèse de type piano : partiels harmoniques, attaque percussive, décrément naturel (les graves résonnent plus longtemps)
 - Jouable à la souris, au toucher, ou au clavier **AZERTY** : rangée du bas pour les blanches (Q S D F G H J K L M W X C V B), rangée du haut pour les noires
 - Réglages volume, sustain et octave
 - Bouton plein écran (là où le navigateur le permet) et PWA installable : une fois ajoutée à l'écran d'accueil, l'app démarre directement en plein écran et fonctionne hors ligne
 - Contournement du mode silencieux iOS, désactivation de la loupe d'appui long et du zoom double-appui
+
+## Ajouter des morceaux intégrés
+
+Le menu « Morceaux intégrés » de l'app liste automatiquement les fichiers
+`.mid` / `.midi` du dossier `songs/` de la branche `gh-pages` — aucun
+changement de code n'est nécessaire :
+
+1. Sur GitHub, basculez sur la branche `gh-pages` et ouvrez le dossier `songs/`.
+2. « Add file » → « Upload files », déposez vos `.mid`, validez le commit.
+3. Le site se met à jour en une à deux minutes : le morceau apparaît dans le menu.
+
+Le nom du fichier sert de libellé (« 01 - Kyrie (pupitres).mid » s'affichera
+« 01 - Kyrie (pupitres) ») ; tout fichier non-MIDI est ignoré. Un morceau
+écouté une fois est mis en cache par le service worker et reste disponible
+hors ligne.
 
 ## Lancer en local
 
@@ -39,8 +55,10 @@ src/Piano.jsx     Rendu des touches (blanches / noires)
 src/audio.js      Synthèse Web Audio (partiels, enveloppe, mode silencieux iOS)
 src/notes.js      Notes, solfège, fréquences, mappage clavier
 src/midi.js       Analyse et lecture de fichiers MIDI (pause, reprise, navigation)
+src/songs.js      Morceaux intégrés : découverte de la liste, chargement
 src/styles.css    Style visuel
-public/           Manifeste PWA, icône, service worker
+public/           Manifeste PWA, icône, service worker, morceaux (public/songs/)
+public/songs/    Dépôt des fichiers .mid proposés dans le menu (branche gh-pages : songs/)
 ```
 
 Aucune dépendance externe au-delà de React : tout le son est généré

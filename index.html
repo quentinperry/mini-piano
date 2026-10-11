@@ -3,10 +3,922 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mini Piano</title>
+    <title>Mini Piano — l'outil des choristes</title>
+    <meta name="description" content="Mini piano pour choristes : tessitures soprano, alto, ténor et basse, notation solfège, son de piano Web Audio." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎹</text></svg>" />
+    <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+    <style>
+.piano-app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 32px 16px;
+  background:
+    radial-gradient(900px 480px at 50% -80px, rgba(201, 169, 98, 0.16), transparent 70%),
+    radial-gradient(1400px 900px at 50% 120%, rgba(23, 34, 66, 0.85), transparent 60%),
+    linear-gradient(180deg, #0c1220 0%, #0a0e18 60%, #070a12 100%);
+  color: #ece5d8;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Centrage vertical sans troncature : quand le contenu dépasse,
+   la page défile naturellement au lieu de couper haut et bas. */
+.piano-app > :first-child {
+  margin-top: auto;
+}
+
+.piano-app > :last-child {
+  margin-bottom: auto;
+}
+
+.piano-header {
+  text-align: center;
+}
+
+.piano-header h1 {
+  margin: 0;
+  font-family: "Didot", "Bodoni MT", "Playfair Display", Georgia, "Times New Roman", serif;
+  font-size: 30px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.42em;
+  color: #d9c39a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.piano-header h1::before,
+.piano-header h1::after {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #b08d4f, transparent);
+}
+
+.piano-sub {
+  margin: 10px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 14px;
+  color: #b8ae97;
+  max-width: 560px;
+}
+
+.audio-badge {
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 4px 14px;
+  border: 1px solid rgba(201, 169, 98, 0.3);
+  background: rgba(201, 169, 98, 0.08);
+  color: #cbbfa4;
+}
+
+.audio-badge.audio-running {
+  border-color: rgba(150, 200, 150, 0.4);
+  background: rgba(150, 200, 150, 0.1);
+  color: #a9d8a9;
+}
+
+.audio-badge.audio-suspended,
+.audio-badge.audio-absent {
+  border-color: rgba(224, 168, 96, 0.5);
+  background: rgba(224, 168, 96, 0.1);
+  color: #e0a860;
+}
+
+.piano-display {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  height: 48px;
+}
+
+.piano-display-note {
+  font-family: "Didot", "Bodoni MT", Georgia, serif;
+  font-size: 44px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  min-width: 84px;
+  text-align: center;
+  color: #d9b878;
+  text-shadow: 0 0 28px rgba(217, 184, 120, 0.25);
+}
+
+.piano-display-freq {
+  font-size: 13px;
+  color: #a99f86;
+  font-variant-numeric: tabular-nums;
+}
+
+.piano {
+  width: 100%;
+  max-width: 1080px;
+  background: linear-gradient(180deg, #141a2c 0%, #0c101d 100%);
+  border: 1px solid rgba(201, 169, 98, 0.35);
+  border-radius: 12px;
+  padding: 18px 18px 22px;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(217, 184, 120, 0.18);
+}
+
+.piano-keys {
+  position: relative;
+  display: flex;
+  height: clamp(150px, 32vh, 230px);
+  user-select: none;
+  touch-action: none;
+}
+
+.white-key {
+  position: relative;
+  flex: 1 1 0;
+  margin: 0 2px;
+  border: none;
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(180deg, #faf6ec 0%, #f0e9d8 80%, #ddd2b8 100%);
+  box-shadow: inset 0 -6px 8px rgba(90, 70, 30, 0.14), 0 3px 4px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 10px;
+  gap: 4px;
+  transition: background 0.06s ease;
+}
+
+.white-key:active,
+.white-key.is-active {
+  background: linear-gradient(180deg, #efdcae 0%, #dcbc7c 70%, #c29a4e 100%);
+  box-shadow: inset 0 4px 10px rgba(110, 80, 20, 0.35);
+  transform: translateY(1px);
+}
+
+.black-key {
+  position: absolute;
+  top: 0;
+  height: 60%;
+  z-index: 2;
+  border: none;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(180deg, #2a3040 0%, #12151f 55%, #05070c 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(217, 184, 120, 0.3),
+    inset 0 -5px 6px rgba(255, 255, 255, 0.06),
+    0 4px 8px rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 10px;
+  transition: background 0.06s ease;
+}
+
+.black-key:active,
+.black-key.is-active {
+  background: linear-gradient(180deg, #d9b878 0%, #a67c3a 60%, #6d4d1c 100%);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.5);
+  transform: translateY(1px);
+}
+
+.key-note {
+  font-size: 10px;
+  font-weight: 600;
+  color: #9a8f74;
+}
+
+.key-bind {
+  font-size: 10px;
+  font-weight: 700;
+  color: #b3a88c;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.black-key .key-bind {
+  color: #d8cdb4;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.piano-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #a08d5f;
+}
+
+.octave-btns,
+.wave-btns,
+.voice-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.octave-btns button,
+.wave-btns button,
+.voice-btns button {
+  background: transparent;
+  color: #d8cdb4;
+  border: 1px solid rgba(201, 169, 98, 0.35);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.octave-btns button:hover,
+.wave-btns button:hover,
+.voice-btns button:hover {
+  border-color: rgba(217, 184, 120, 0.7);
+  color: #e6d5ae;
+}
+
+.wave-btns button.is-selected,
+.voice-btns button.is-selected {
+  background: linear-gradient(180deg, #e3c98e 0%, #c39c55 100%);
+  border-color: #c39c55;
+  color: #1b1408;
+  font-weight: 600;
+}
+
+.octave-value {
+  min-width: 32px;
+  text-align: center;
+  font-weight: 600;
+  color: #d8cdb4;
+  font-variant-numeric: tabular-nums;
+}
+
+.piano-range {
+  font-size: 11px;
+  color: #b8ae97;
+  font-variant-numeric: tabular-nums;
+}
+
+.piano-controls input[type="range"] {
+  width: 140px;
+  accent-color: #c9a962;
+}
+
+.piano-credit {
+  margin: 4px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #8a7f66;
+}
+
+/* Gabarit compact quand le panneau est large mais peu haut
+   (paysage, canvas au-dessus de la conversation) */
+@media (min-width: 560px) and (max-height: 620px) {
+  .piano-app {
+    gap: 10px;
+    padding: 12px 16px;
+  }
+
+  .piano-header h1 {
+    font-size: 16px;
+    letter-spacing: 0.3em;
+    gap: 12px;
+  }
+
+  .piano-header h1::before,
+  .piano-header h1::after {
+    width: 32px;
+  }
+
+  .piano-sub,
+  .piano-credit {
+    display: none;
+  }
+
+  .audio-badge {
+    font-size: 10px;
+    padding: 2px 10px;
+  }
+
+  .piano-display {
+    height: 34px;
+  }
+
+  .piano-display-note {
+    font-size: 26px;
+    min-width: 64px;
+  }
+
+  .piano {
+    padding: 10px 10px 12px;
+  }
+
+  .piano-keys {
+    height: clamp(110px, 30vh, 170px);
+  }
+
+  .white-key {
+    border-radius: 0 0 6px 6px;
+  }
+
+  .key-note {
+    font-size: 9px;
+  }
+
+  .key-bind {
+    font-size: 8px;
+    padding: 0 4px;
+  }
+
+  .piano-controls {
+    gap: 14px;
+  }
+
+  .piano-controls input[type="range"] {
+    width: 110px;
+  }
+}
+
+    </style>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="text/babel" data-presets="react">
+const { useEffect, useMemo, useRef, useState } = React;
+
+// ===== notes.js =====
+// Génération et données des notes
+function midiToFreq(midi) {
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+const NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const SOLFEGE = ["Do", "Do#", "Ré", "Ré#", "Mi", "Fa", "Fa#", "Sol", "Sol#", "La", "La#", "Si"];
+
+function midiToName(midi) {
+  return NAMES[midi % 12] + (Math.floor(midi / 12) - 1);
+}
+
+function midiToSolf(midi) {
+  return SOLFEGE[midi % 12] + (Math.floor(midi / 12) - 1);
+}
+
+// Clavier AZERTY : rangée du bas = touches blanches, rangée du haut = touches noires.
+// 25 étiquettes couvrent Do3 → Do5 (toute la tessiture ténor en paysage).
+const KEY_LABELS = [
+  "Q", "Z", // Do3, Do#3
+  "S", "E", // Ré3, Ré#3
+  "D",      // Mi3
+  "F", "T", // Fa3, Fa#3
+  "G", "Y", // Sol3, Sol#3
+  "H", "U", // La3, La#3
+  "J",      // Si3
+  "K", "O", // Do4, Do#4
+  "L", "P", // Ré4, Ré#4
+  "M",      // Mi4
+  "W", "N", // Fa4, Fa#4
+  "X", ",", // Sol4, Sol#4
+  "C", ";", // La4, La#4
+  "V",      // Si4
+  "B",      // Do5
+];
+
+// Construit un clavier de `count` demi-tons à partir de `startMidi`
+function buildKeys(startMidi, count = 17) {
+  const keys = [];
+  let whiteIndex = -1;
+  for (let i = 0; i < count; i++) {
+    const midi = startMidi + i;
+    const semitone = midi % 12;
+    const isBlack =
+      semitone === 1 || semitone === 3 || semitone === 6 || semitone === 8 || semitone === 10;
+    if (!isBlack) whiteIndex++;
+    keys.push({
+      id: `n${midi}`,
+      midi,
+      name: midiToName(midi),
+      solfege: midiToSolf(midi),
+      isBlack,
+      whiteBefore: whiteIndex,
+      keyLabel: KEY_LABELS[i] || null,
+    });
+  }
+  return keys;
+}
+
+function buildKeyMap(keys) {
+  const map = {};
+  keys.forEach((k) => {
+    if (k.keyLabel) map[k.keyLabel.toLowerCase()] = k;
+  });
+  return map;
+}
+
+// ===== audio.js =====
+// Synthèse type piano : partiels harmoniques avec inharmonicité légère,
+// attaque percussive et décrément naturel (graves plus longs que les aigus).
+let ctx = null;
+
+// Crée (ou réveille) le contexte audio. À appeler dans un geste utilisateur.
+// Renvoie le contexte, ou null si l'audio est indisponible.
+function ensureAudio() {
+  if (!ctx) {
+    try {
+      ctx = new window.AudioContext();
+    } catch (err) {
+      ctx = null;
+      return null;
+    }
+  }
+  if (ctx.state !== "running") {
+    try {
+      const p = ctx.resume();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch (err) {
+      /* rien */
+    }
+  }
+  return ctx;
+}
+
+function audioState() {
+  return ctx ? ctx.state : "absent";
+}
+
+// Partiels typiques d'une corde de piano : fondamentale dominante,
+// harmoniques décroissants, très légèrement étirés (inharmonicité).
+const PARTIALS = [
+  { ratio: 1.0, gain: 1.0 },
+  { ratio: 2.0, gain: 0.42 },
+  { ratio: 3.0, gain: 0.2 },
+  { ratio: 4.0, gain: 0.1 },
+  { ratio: 5.0, gain: 0.05 },
+];
+
+class Synth {
+  constructor() {
+    this.active = new Map();
+  }
+
+  noteOn(id, freq, { volume = 0.6 } = {}) {
+    if (this.active.has(id)) return true;
+    const c = ensureAudio();
+    if (!c) return false;
+    const now = c.currentTime;
+
+    const master = c.createGain();
+    const peak = Math.max(0.001, volume);
+
+    // Les notes aiguës s'éteignent plus vite que les graves
+    const decayTime = Math.min(6, Math.max(1.2, 880 / freq));
+
+    // Enveloppe : attaque très rapide, puis décrément exponentiel naturel
+    master.gain.setValueAtTime(0, now);
+    master.gain.linearRampToValueAtTime(peak, now + 0.008);
+    master.gain.setTargetAtTime(Math.max(peak * 0.18, 0.001), now + 0.008, decayTime / 4);
+
+    const oscs = [];
+    PARTIALS.forEach((p, i) => {
+      try {
+        const osc = c.createOscillator();
+        osc.type = "sine";
+        const f = freq * p.ratio * (1 + i * 0.0008); // inharmonicité légère
+        osc.frequency.value = f;
+        const g = c.createGain();
+        // Les harmoniques aigus s'atténuent dans les notes hautes
+        g.gain.value = p.gain * (i === 0 ? 1 : Math.min(1, 220 / f + 0.35));
+        osc.connect(g);
+        g.connect(master);
+        osc.start(now);
+        oscs.push(osc);
+      } catch (err) {
+        /* partiel ignoré */
+      }
+    });
+
+    master.connect(c.destination);
+    // Filet de sécurité : on coupe tout après la queue naturelle
+    oscs.forEach((o) => {
+      try {
+        o.stop(now + decayTime + 8);
+      } catch (err) {
+        /* rien */
+      }
+    });
+
+    this.active.set(id, { master, oscs, startedAt: now, peak, decayTime });
+    return c.state === "running";
+  }
+
+  noteOff(id, release = 0.25) {
+    const v = this.active.get(id);
+    if (!v) return;
+    this.active.delete(id);
+    const c = ensureAudio();
+    if (!c) return;
+    const t = c.currentTime;
+    const rel = Math.max(0.05, release);
+    const param = v.master.gain;
+    try {
+      // Gèle l'automatisation à sa valeur courante si possible
+      if (typeof param.cancelAndHoldAtTime === "function") {
+        param.cancelAndHoldAtTime(t);
+      } else {
+        param.cancelScheduledValues(t);
+      }
+      const cur = Math.max(param.value, 0.0001);
+      param.setValueAtTime(cur, t);
+      param.setTargetAtTime(0.0001, t, rel / 5);
+    } catch (err) {
+      /* rien */
+    }
+    v.oscs.forEach((o) => {
+      try {
+        o.stop(t + rel + 0.5);
+      } catch (err) {
+        /* déjà arrêté */
+      }
+    });
+  }
+
+  stopAll(release = 0.1) {
+    Array.from(this.active.keys()).forEach((id) => this.noteOff(id, release));
+  }
+}
+
+// ===== Piano.jsx =====
+function Piano({ keys, activeIds, onNoteOn, onNoteOff }) {
+  const whites = useMemo(() => keys.filter((k) => !k.isBlack), [keys]);
+  const blacks = useMemo(() => keys.filter((k) => k.isBlack), [keys]);
+  const whiteW = 100 / whites.length;
+  const blackW = whiteW * 0.62;
+
+  return (
+    <div className="piano">
+      <div className="piano-keys">
+        {whites.map((k) => (
+          <button
+            key={k.id}
+            type="button"
+            className={`white-key${activeIds.has(k.id) ? " is-active" : ""}`}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              onNoteOn(k, "pointer");
+            }}
+            onPointerEnter={(e) => {
+              if (e.buttons === 1) onNoteOn(k, "pointer");
+            }}
+            onPointerLeave={() => onNoteOff(k.id, "pointer")}
+            aria-label={`${k.solfege} (${k.name})`}
+          >
+            <span className="key-note">{k.solfege}</span>
+            {k.keyLabel && <span className="key-bind">{k.keyLabel}</span>}
+          </button>
+        ))}
+        {blacks.map((k) => (
+          <button
+            key={k.id}
+            type="button"
+            className={`black-key${activeIds.has(k.id) ? " is-active" : ""}`}
+            style={{ left: `${(k.whiteBefore + 1) * whiteW - blackW / 2}%`, width: `${blackW}%` }}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              onNoteOn(k, "pointer");
+            }}
+            onPointerEnter={(e) => {
+              if (e.buttons === 1) onNoteOn(k, "pointer");
+            }}
+            onPointerLeave={() => onNoteOff(k.id, "pointer")}
+            aria-label={`${k.solfege} (${k.name})`}
+          >
+            {k.keyLabel && <span className="key-bind">{k.keyLabel}</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ===== PianoApp.jsx =====
+// Tessitures chorales : base midi de chaque pupitre (mi = Do4).
+// Ténor par défaut.
+const TESSITURES = [
+  { id: "soprano", label: "Soprano", base: 60 }, // Do4 – Do6 en paysage
+  { id: "alto", label: "Alto", base: 55 },       // Sol3 – Sol5
+  { id: "tenor", label: "Ténor", base: 48 },     // Do3 – Do5
+  { id: "basse", label: "Basse", base: 40 },     // Mi2 – Mi4
+];
+const DEFAULT_TESSITURE = "tenor";
+// Portrait : 17 demi-tons. Paysage : 25 demi-tons (toute la tessiture).
+const NARROW_COUNT = 17;
+const WIDE_COUNT = 25;
+
+// Mesure la place réellement disponible dans le canvas via un ResizeObserver.
+// Plus fiable que l'orientation annoncée par l'iframe (qui peut être fausse
+// ou flotter pendant une rotation) : on décide selon l'espace réellement rendu.
+function useContainerSize() {
+  const ref = useRef(null);
+  const [size, setSize] = useState(() => ({
+    width: typeof window !== "undefined" ? window.innerWidth : 0,
+    height: typeof window !== "undefined" ? window.innerHeight : 0,
+  }));
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () =>
+      setSize({ width: el.clientWidth, height: el.clientHeight });
+    measure();
+    if (typeof ResizeObserver === "function") {
+      const ro = new ResizeObserver(measure);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+  return { ref, size };
+}
+
+function PianoApp() {
+  const { ref: rootRef, size } = useContainerSize();
+  // Auto : clavier étendu dès que la place le permet ; forçable manuellement.
+  const [layoutMode, setLayoutMode] = useState("auto"); // auto | wide | narrow
+  const autoWide = size.width >= 600;
+  const isWide = layoutMode === "auto" ? autoWide : layoutMode === "wide";
+  const [voiceId, setVoiceId] = useState(DEFAULT_TESSITURE);
+  const [octave, setOctave] = useState(0);
+  const [volume, setVolume] = useState(0.5);
+  const [release, setRelease] = useState(0.35);
+  const [activeIds, setActiveIds] = useState(() => new Set());
+  const [lastNote, setLastNote] = useState(null);
+  const [audioStatus, setAudioStatus] = useState("idle");
+
+  const synthRef = useRef(null);
+  if (!synthRef.current) synthRef.current = new Synth();
+
+  const settingsRef = useRef({ volume, release });
+  settingsRef.current = { volume, release };
+
+  const tessitura = TESSITURES.find((t) => t.id === voiceId) || TESSITURES[2];
+  const keys = useMemo(
+    () => buildKeys(tessitura.base + octave * 12, isWide ? WIDE_COUNT : NARROW_COUNT),
+    [tessitura, octave, isWide]
+  );
+  const keyMap = useMemo(() => buildKeyMap(keys), [keys]);
+
+  const chooseVoice = (id) => {
+    setVoiceId(id);
+    setOctave(0); // on recale le clavier sur la nouvelle tessiture
+  };
+
+  const rangeText = `${keys[0].solfege} – ${keys[keys.length - 1].solfege}`;
+
+  const pointerHeld = useRef(new Set());
+  const keyHeld = useRef(new Set());
+
+  const noteOn = (key) => {
+    const s = settingsRef.current;
+    if (synthRef.current.active.has(key.id)) return;
+    const playing = synthRef.current.noteOn(key.id, midiToFreq(key.midi), {
+      volume: s.volume,
+    });
+    setAudioStatus(audioState());
+    if (!playing) return;
+    setLastNote(key);
+    setActiveIds((prev) => new Set(prev).add(key.id));
+  };
+
+  const noteOff = (id) => {
+    synthRef.current.noteOff(id, settingsRef.current.release);
+    setActiveIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
+  // Déblocage audio : les navigateurs exigent un geste pour démarrer le son.
+  // On réveille le contexte à chaque premier geste utile.
+  useEffect(() => {
+    const unlock = () => {
+      ensureAudio();
+      setAudioStatus(audioState());
+    };
+    window.addEventListener("pointerdown", unlock, true);
+    window.addEventListener("keydown", unlock, true);
+    return () => {
+      window.removeEventListener("pointerdown", unlock, true);
+      window.removeEventListener("keydown", unlock, true);
+    };
+  }, []);
+
+  // Sortie pointeur : au relâchement global, on coupe les notes tenues à la souris
+  useEffect(() => {
+    const onUp = () => {
+      pointerHeld.current.forEach((id) => noteOff(id));
+      pointerHeld.current.clear();
+    };
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, []);
+
+  // Clavier physique
+  useEffect(() => {
+    const down = (e) => {
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      const key = keyMap[e.key.toLowerCase()];
+      if (!key || keyHeld.current.has(key.id)) return;
+      keyHeld.current.add(key.id);
+      noteOn(key);
+    };
+    const up = (e) => {
+      const key = keyMap[e.key.toLowerCase()];
+      if (!key) return;
+      keyHeld.current.delete(key.id);
+      noteOff(key.id);
+    };
+    const blur = () => {
+      keyHeld.current.forEach((id) => noteOff(id));
+      keyHeld.current.clear();
+    };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
+    };
+  }, [keyMap]);
+
+  // Nettoyage au démontage / changement d'octave ou de gabarit
+  useEffect(() => {
+    return () => {
+      synthRef.current.stopAll(0.05);
+      keyHeld.current.clear();
+      pointerHeld.current.clear();
+    };
+  }, [keys]);
+
+  const handlePointerOn = (key, source) => {
+    if (source === "pointer") {
+      pointerHeld.current.add(key.id);
+    }
+    noteOn(key);
+  };
+
+  const handlePointerOff = (id, source) => {
+    if (source === "pointer") pointerHeld.current.delete(id);
+    noteOff(id);
+  };
+
+  return (
+    <div className="piano-app" ref={rootRef}>
+      <header className="piano-header">
+        <h1>Mini Piano</h1>
+        <p className="piano-sub">
+          Choisissez votre pupitre — soprano, alto, ténor (par défaut), basse — puis jouez la note pour vous caler. En paysage, toute la tessiture s'affiche, aigus compris.
+        </p>
+      </header>
+
+      <div className={`audio-badge audio-${audioStatus}`} role="status">
+        {audioStatus === "running"
+          ? "Audio actif"
+          : audioStatus === "idle"
+            ? "Cliquez sur une touche pour activer le son"
+            : "Audio en veille — cliquez sur une touche pour l'activer"}
+      </div>
+
+      <div className="piano-display">
+        <span className="piano-display-note">{lastNote ? lastNote.solfege : "—"}</span>
+        {lastNote && (
+          <span className="piano-display-freq">
+            {lastNote.name} · {midiToFreq(lastNote.midi).toFixed(1)} Hz
+          </span>
+        )}
+      </div>
+
+      <Piano
+        keys={keys}
+        activeIds={activeIds}
+        onNoteOn={handlePointerOn}
+        onNoteOff={handlePointerOff}
+      />
+
+      <div className="piano-controls">
+        <div className="control-group">
+          <span className="control-label">Tessiture</span>
+          <div className="voice-btns">
+            {TESSITURES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={t.id === voiceId ? "is-selected" : ""}
+                onClick={() => chooseVoice(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <span className="piano-range">{rangeText}</span>
+        </div>
+
+        <div className="control-group">
+          <span className="control-label">Clavier</span>
+          <div className="voice-btns">
+            {[
+              { id: "auto", label: "Auto" },
+              { id: "wide", label: "Étendu" },
+              { id: "narrow", label: "Compact" },
+            ].map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                className={layoutMode === m.id ? "is-selected" : ""}
+                onClick={() => setLayoutMode(m.id)}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="control-group">
+          <span className="control-label">Octave</span>
+          <div className="octave-btns">
+            <button type="button" onClick={() => setOctave((o) => Math.max(-2, o - 1))} aria-label="Octave en dessous">
+              −
+            </button>
+            <span className="octave-value">{octave >= 0 ? `+${octave}` : octave}</span>
+            <button type="button" onClick={() => setOctave((o) => Math.min(2, o + 1))} aria-label="Octave au-dessus">
+              +
+            </button>
+          </div>
+        </div>
+
+        <div className="control-group">
+          <span className="control-label">Volume</span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={volume}
+            onChange={(e) => setVolume(Number(e.target.value))}
+          />
+        </div>
+
+        <div className="control-group">
+          <span className="control-label">Sustain</span>
+          <input
+            type="range"
+            min="0.05"
+            max="1.5"
+            step="0.05"
+            value={release}
+            onChange={(e) => setRelease(Number(e.target.value))}
+          />
+        </div>
+      </div>
+
+      <p className="piano-credit">Style inspiré de l'Académie du Palais royal</p>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<PianoApp />);
+    </script>
   </body>
 </html>

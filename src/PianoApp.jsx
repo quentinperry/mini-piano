@@ -185,7 +185,7 @@ export default function PianoApp() {
       <header className="piano-header">
         <h1>Mini Piano</h1>
         <p className="piano-sub">
-          Choisissez votre pupitre — soprano, alto, ténor (par défaut), basse — puis jouez la note pour vous caler. En paysage, toute la tessiture s'affiche, aigus compris.
+          Choisissez votre pupitre (soprano, alto, ténor par défaut, basse) puis jouez la note pour vous caler. En paysage, toute la tessiture s'affiche, aigus compris.
         </p>
       </header>
 
@@ -194,11 +194,11 @@ export default function PianoApp() {
           ? "Audio actif"
           : audioStatus === "idle"
             ? "Cliquez sur une touche pour activer le son"
-            : "Audio en veille — cliquez sur une touche pour l'activer"}
+            : "Audio en veille : cliquez sur une touche pour l'activer"}
       </div>
 
       <div className="piano-display">
-        <span className="piano-display-note">{lastNote ? lastNote.solfege : "—"}</span>
+        <span className="piano-display-note">{lastNote ? lastNote.solfege : "·"}</span>
         {lastNote && (
           <span className="piano-display-freq">
             {lastNote.name} · {midiToFreq(lastNote.midi).toFixed(1)} Hz
@@ -288,8 +288,6 @@ export default function PianoApp() {
           />
         </div>
       </div>
-
-      <p className="piano-credit">Style inspiré de l'Académie du Palais royal</p>
     </div>
   );
 }

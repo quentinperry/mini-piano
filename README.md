@@ -1,7 +1,7 @@
 # Mini Piano
 
 Un petit piano web pensé pour les choristes : chaque pupitre (soprano, alto,
-ténor — par défaut —, basse) peut afficher sa tessiture complète et jouer les
+ténor par défaut, basse) peut afficher sa tessiture complète et jouer les
 notes en notation solfège (Do, Ré, Mi…), avec un son de piano synthétisé en Web Audio.
 
 ## Fonctionnalités
@@ -12,7 +12,6 @@ notes en notation solfège (Do, Ré, Mi…), avec un son de piano synthétisé e
 - Synthèse de type piano : partiels harmoniques, attaque percussive, décrément naturel (les graves résonnent plus longtemps)
 - Jouable à la souris, au toucher, ou au clavier **AZERTY** : rangée du bas pour les blanches (Q S D F G H J K L M W X C V B), rangée du haut pour les noires
 - Réglages volume, sustain et octave
-- Style inspiré de l'Académie du Palais royal : bleu nuit, ivoire et or champagne
 
 ## Lancer en local
 

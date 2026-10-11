@@ -777,7 +777,7 @@ function useContainerSize() {
 
 function PianoApp() {
   const { ref: rootRef, size } = useContainerSize();
-// Portrait : clavier compact (17 demi-tons). Paysage : étendu (25, toute
+  // Portrait : clavier compact (17 demi-tons). Paysage : étendu (25, toute
   // la tessiture). Le gabarit suit l'orientation réelle, sans réglage manuel.
   const isWide = size.width > 0 && size.width >= size.height;
   const [voiceId, setVoiceId] = useState(DEFAULT_TESSITURE);

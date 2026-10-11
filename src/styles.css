@@ -438,3 +438,27 @@
 .midi-error {
   color: #e0a860;
 }
+
+/* Barre de navigation dans le morceau : temps écoulé / durée totale.
+   Le curseur s'étale, contrairement aux réglages à largeur fixe. */
+.midi-seek {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 240px;
+  max-width: 68vw;
+}
+
+.midi-seek input[type="range"] {
+  flex: 1;
+  width: auto;
+  min-width: 80px;
+}
+
+.midi-time {
+  font-size: 11px;
+  color: #b8ae97;
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+  text-align: center;
+}

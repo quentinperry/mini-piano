@@ -194,35 +194,87 @@ export function parseMidi(buffer) {
 // Lecture d'une liste d'événements déjà triés. Un retard (timer) par événement
 // suffit pour un fichier de répétition : quelques milliers de notes tiennent
 // sans problème, et la précision d'une dizaine de millisecondes passe inaperçue
-// pour se caler sur sa partie.
+// pour se caler sur sa partie. Le lecteur mémorise sa position (en secondes du
+// morceau) : pause, reprise, changement de vitesse en route et déplacement
+// dans le morceau (seek) reposent sur le même mécanisme de reprogrammation.
 export function createMidiPlayer(events, duration, { onNoteOn, onNoteOff, onEnd }) {
   let timers = [];
   let playing = false;
-  return {
-    play(speed = 1) {
-      playing = true;
-      for (const ev of events) {
-        timers.push(
-          setTimeout(() => {
-            if (!playing) return;
-            if (ev.on) onNoteOn(ev.midi, ev.velocity);
-            else onNoteOff(ev.midi);
-          }, (ev.t * 1000) / speed)
-        );
-      }
+  let speed = 1;
+  let pos = 0; // position dans le morceau, en secondes
+  let startedAt = 0; // performance.now() au (re)démarrage de la lecture
+
+  const clearTimers = () => {
+    for (const t of timers) clearTimeout(t);
+    timers = [];
+  };
+
+  const getPos = () =>
+    playing
+      ? Math.min(pos + ((performance.now() - startedAt) / 1000) * speed, duration)
+      : pos;
+
+  // (Re)programme tous les événements postérieurs à la position courante.
+  // Les événements passés sont ignorés : un note-off orphelin (note allumée
+  // avant un saut) est inoffensif, l'appelant relâche déjà les notes tenues.
+  const schedule = () => {
+    for (const ev of events) {
+      if (ev.t < pos) continue;
       timers.push(
         setTimeout(() => {
-          if (playing) {
-            playing = false;
-            onEnd();
-          }
-        }, (duration * 1000) / speed + 80)
+          if (!playing) return;
+          if (ev.on) onNoteOn(ev.midi, ev.velocity);
+          else onNoteOff(ev.midi);
+        }, ((ev.t - pos) * 1000) / speed)
       );
+    }
+    timers.push(
+      setTimeout(() => {
+        if (playing) {
+          playing = false;
+          pos = duration;
+          clearTimers();
+          onEnd();
+        }
+      }, ((duration - pos) * 1000) / speed + 80)
+    );
+  };
+
+  return {
+    // Démarre ou reprend, éventuellement depuis une position donnée.
+    play(newSpeed = 1, from = null) {
+      clearTimers();
+      speed = newSpeed;
+      if (from !== null && from !== undefined) {
+        pos = Math.min(Math.max(from, 0), duration);
+      }
+      playing = true;
+      startedAt = performance.now();
+      schedule();
     },
+    pause() {
+      if (!playing) return;
+      pos = getPos();
+      playing = false;
+      clearTimers();
+    },
+    // Saute à une position : reprogramme les événements restants si on était
+    // en lecture, sinon mémorise simplement la nouvelle position.
+    seek(to) {
+      const resume = playing;
+      playing = false;
+      clearTimers();
+      pos = Math.min(Math.max(to, 0), duration);
+      if (resume) {
+        playing = true;
+        startedAt = performance.now();
+        schedule();
+      }
+    },
+    getPos,
     stop() {
       playing = false;
-      for (const t of timers) clearTimeout(t);
-      timers = [];
+      clearTimers();
     },
   };
 }

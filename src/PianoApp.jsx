@@ -21,6 +21,10 @@ const WIDE_COUNT = 25;
 // Plus fiable que l'orientation annoncée par l'iframe (qui peut être fausse
 // ou flotter pendant une rotation) : portrait ou paysage se déduit du
 // rapport largeur/hauteur réellement rendu.
+function formatMidiTime(t) {
+  return `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+}
+
 function useContainerSize() {
   const ref = useRef(null);
   const [size, setSize] = useState(() => ({
@@ -65,12 +69,15 @@ export default function PianoApp() {
   const [midiPlaying, setMidiPlaying] = useState(false);
   const [midiActiveIds, setMidiActiveIds] = useState(() => new Set());
   const [midiError, setMidiError] = useState(null);
+  // Position dans le morceau (seconde), mémorisée d'une pause à l'autre
+  const [midiProgress, setMidiProgress] = useState(0);
 
   const synthRef = useRef(null);
   if (!synthRef.current) synthRef.current = new Synth();
 
   const midiPlayerRef = useRef(null);
   const midiHeldRef = useRef(new Set());
+  const midiPosRef = useRef(0); // position de reprise, en secondes
 
   const settingsRef = useRef({ volume, release });
   settingsRef.current = { volume, release };
@@ -84,13 +91,13 @@ export default function PianoApp() {
   const keyByMidi = useMemo(() => new Map(keys.map((k) => [k.midi, k])), [keys]);
 
   const chooseVoice = (id) => {
-    stopMidi(); // les surbrillances MIDI ne suivraient plus le clavier
+    pauseMidi(); // les surbrillances MIDI ne suivraient plus le clavier
     setVoiceId(id);
     setOctave(0); // on recale le clavier sur la nouvelle tessiture
   };
 
   const shiftOctave = (d) => {
-    stopMidi();
+    pauseMidi();
     setOctave((o) => Math.min(2, Math.max(-2, o + d)));
   };
 
@@ -231,18 +238,25 @@ export default function PianoApp() {
   // ---- Lecture d'un fichier MIDI : entraînement pupitre ----
   // Le choriste ouvre un fichier (souvent une piste par pupitre), choisit
   // sa voix, et suit en rythme : les touches s'illuminent, le son passe par
-  // le même synthé que le clavier.
-  const stopMidi = () => {
-    if (midiPlayerRef.current) {
-      midiPlayerRef.current.stop();
-      midiPlayerRef.current = null;
-    }
+  // le même synthé que le clavier. La lecture se met en pause et se reprend
+  // à la position mémorisée, et le curseur permet de naviguer dans le morceau.
+  const releaseMidiNotes = () => {
     midiHeldRef.current.forEach((m) =>
       synthRef.current.noteOff("midi-" + m, settingsRef.current.release)
     );
     midiHeldRef.current.clear();
     setMidiActiveIds(new Set());
+  };
+
+  const pauseMidi = () => {
+    if (midiPlayerRef.current) {
+      midiPosRef.current = midiPlayerRef.current.getPos();
+      midiPlayerRef.current.stop();
+      midiPlayerRef.current = null;
+    }
+    releaseMidiNotes();
     setMidiPlaying(false);
+    setMidiProgress(midiPosRef.current);
   };
 
   const handleMidiNoteOn = (midiNum, velocity) => {
@@ -270,7 +284,7 @@ export default function PianoApp() {
     }
   };
 
-  const startMidi = (speed = midiSpeed, track = midiTrack) => {
+  const startMidi = (speed = midiSpeed, track = midiTrack, fromPos = midiPosRef.current) => {
     if (!midi) return;
     const notes =
       track === "all"
@@ -292,21 +306,50 @@ export default function PianoApp() {
       onNoteOff: handleMidiNoteOff,
       onEnd: () => {
         midiPlayerRef.current = null;
+        midiPosRef.current = 0; // morceau terminé : une relecture repart du début
         setMidiPlaying(false);
-        setMidiActiveIds(new Set());
+        releaseMidiNotes();
+        setMidiProgress(maxT);
       },
     });
-    midiPlayerRef.current.play(speed);
+    midiPlayerRef.current.play(speed, fromPos);
     setMidiPlaying(true);
   };
 
-  const toggleMidi = () => (midiPlaying ? stopMidi() : startMidi());
+  const toggleMidi = () =>
+    midiPlaying ? pauseMidi() : startMidi();
 
+  // Saut dans le morceau : on relâche les notes tenues, puis on reprogramme
+  // la lecture depuis la nouvelle position (les notes déjà passées ne sonnent
+  // pas, leurs note-off orphelins sont sans effet).
+  const seekMidi = (t) => {
+    if (!midi) return;
+    const to = Math.min(Math.max(t, 0), midi.duration);
+    midiPosRef.current = to;
+    releaseMidiNotes();
+    if (midiPlaying && midiPlayerRef.current) {
+      midiPlayerRef.current.seek(to);
+    } else {
+      setMidiProgress(to);
+    }
+  };
+
+  // Barre de progression : rafraîchie pendant la lecture uniquement.
+  useEffect(() => {
+    if (!midiPlaying) return;
+    const id = setInterval(() => {
+      if (midiPlayerRef.current) setMidiProgress(midiPlayerRef.current.getPos());
+    }, 200);
+    return () => clearInterval(id);
+  }, [midiPlaying]);
+
+  // Changer de piste ou de vitesse garde la position : on poursuit au même
+  // endroit du morceau, comme le ferait un lecteur audio.
   const changeMidiTrack = (e) => {
     const track = e.target.value;
     setMidiTrack(track);
     if (midiPlaying) {
-      stopMidi();
+      pauseMidi();
       startMidi(midiSpeed, track);
     }
   };
@@ -315,7 +358,7 @@ export default function PianoApp() {
     const speed = Number(e.target.value);
     setMidiSpeed(speed);
     if (midiPlaying) {
-      stopMidi();
+      pauseMidi();
       startMidi(speed, midiTrack);
     }
   };
@@ -324,7 +367,9 @@ export default function PianoApp() {
     const file = e.target.files && e.target.files[0];
     e.target.value = ""; // permet de rouvrir le même fichier
     if (!file) return;
-    stopMidi();
+    pauseMidi();
+    midiPosRef.current = 0; // nouveau fichier : on repart du début
+    setMidiProgress(0);
     try {
       const parsed = parseMidi(await file.arrayBuffer());
       setMidi({ name: file.name, duration: parsed.duration, tracks: parsed.tracks });
@@ -454,9 +499,21 @@ export default function PianoApp() {
           {midi && (
             <>
               <span className="midi-file">
-                {midi.name} · {Math.floor(midi.duration / 60)}:
-                {String(Math.floor(midi.duration % 60)).padStart(2, "0")}
+                {midi.name} · {formatMidiTime(midi.duration)}
               </span>
+              <div className="midi-seek">
+                <span className="midi-time">{formatMidiTime(Math.min(midiProgress, midi.duration))}</span>
+                <input
+                  type="range"
+                  min="0"
+                  max={midi.duration}
+                  step="0.1"
+                  value={Math.min(midiProgress, midi.duration)}
+                  onChange={(e) => seekMidi(Number(e.target.value))}
+                  aria-label="Position dans le morceau"
+                />
+                <span className="midi-time">{formatMidiTime(midi.duration)}</span>
+              </div>
               <div className="voice-btns midi-row">
                 <select value={midiTrack} onChange={changeMidiTrack} aria-label="Piste à jouer">
                   <option value="all">Toutes les pistes</option>
@@ -474,7 +531,11 @@ export default function PianoApp() {
                   ))}
                 </select>
                 <button type="button" onClick={toggleMidi}>
-                  {midiPlaying ? "Stop" : "Lire"}
+                  {midiPlaying
+                    ? "Pause"
+                    : midiProgress > 0.05 && midiProgress < midi.duration - 0.05
+                      ? "Reprendre"
+                      : "Lire"}
                 </button>
               </div>
             </>

@@ -1,0 +1,28 @@
+# À chaque poussée sur main : compilation (Vite) puis déploiement
+# du site sur la branche gh-pages, sans aucune étape manuelle. Le dossier
+# public/ est copié tel quel dans le build : service worker, manifeste PWA,
+# icône et morceaux (public/songs/) partent avec le site.
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-fund --no-audit
+      - run: npm run build
+      - uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: dist
+          clean: true

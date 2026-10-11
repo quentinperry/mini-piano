@@ -41,6 +41,15 @@ npm run dev
 
 Puis ouvrez l'URL affichée (http://localhost:5173).
 
+## Déploiement automatique
+
+Toute poussée sur la branche `main` déclenche GitHub Actions : le site est
+compilé (Vite) puis publié sur la branche `gh-pages`, qui sert
+https://quentinperry.github.io/mini-piano/ — une à deux minutes. Modifier un
+fichier de `src/` directement sur github.com suffit : le déploiement suit
+automatiquement. La branche `gh-pages` est un artefact généré, ne pas
+l'éditer à la main.
+
 ## Installer la PWA
 
 Sur Android (Chrome) : ouvrez le site puis « Ajouter à l'écran d'accueil ».

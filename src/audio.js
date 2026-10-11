@@ -7,7 +7,9 @@ let ctx = null;
 export function ensureAudio() {
   if (!ctx) {
     try {
-      ctx = new window.AudioContext();
+      // Profil "interactive" : tampons de sortie les plus courts possible,
+      // pour minimiser la latence entre l'appui et le son.
+      ctx = new window.AudioContext({ latencyHint: "interactive" });
     } catch (err) {
       ctx = null;
       return null;
@@ -55,10 +57,10 @@ export class Synth {
     // Les notes aiguës s'éteignent plus vite que les graves
     const decayTime = Math.min(6, Math.max(1.2, 880 / freq));
 
-    // Enveloppe : attaque très rapide, puis décrément exponentiel naturel
+    // Enveloppe : attaque quasi instantanée (3 ms), puis décrément exponentiel naturel
     master.gain.setValueAtTime(0, now);
-    master.gain.linearRampToValueAtTime(peak, now + 0.008);
-    master.gain.setTargetAtTime(Math.max(peak * 0.18, 0.001), now + 0.008, decayTime / 4);
+    master.gain.linearRampToValueAtTime(peak, now + 0.003);
+    master.gain.setTargetAtTime(Math.max(peak * 0.18, 0.001), now + 0.003, decayTime / 4);
 
     const oscs = [];
     PARTIALS.forEach((p, i) => {

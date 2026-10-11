@@ -101,6 +101,14 @@ export default function PianoApp() {
     });
   };
 
+  // Activation par défaut : on demande l'audio dès le chargement.
+  // Les navigateurs qui l'autorisent sans geste l'activent ici ;
+  // les autres le débloqueront au premier clic ou au premier appui touche.
+  useEffect(() => {
+    ensureAudio();
+    setAudioStatus(audioState());
+  }, []);
+
   // Déblocage audio : les navigateurs exigent un geste pour démarrer le son.
   // On réveille le contexte à chaque premier geste utile.
   useEffect(() => {

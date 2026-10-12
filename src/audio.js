@@ -70,11 +70,11 @@ export function ensureAudio() {
       // Sans lui, un tutti orchestral sature durement (grésillement) et le
       // moteur audio peut s'effondrer sur mobile.
       const limiter = ctx.createDynamicsCompressor();
-      limiter.threshold.value = -18;
+      limiter.threshold.value = -12;
       limiter.knee.value = 24;
-      limiter.ratio.value = 12;
-      limiter.attack.value = 0.003;
-      limiter.release.value = 0.25;
+      limiter.ratio.value = 8;
+      limiter.attack.value = 0.005;
+      limiter.release.value = 0.35;
       masterBus = ctx.createGain();
       masterBus.gain.value = 0.9;
       masterBus.connect(limiter);
@@ -135,7 +135,7 @@ export class Synth {
     // passe la première. Un fondu très court évite les claquements.
     while (this.active.size >= this.maxVoices) {
       const oldest = this.active.keys().next().value;
-      this.noteOff(oldest, 0.04);
+      this.noteOff(oldest, 0.12);
     }
 
     const master = c.createGain();
@@ -179,8 +179,11 @@ export class Synth {
       const noiseGain = c.createGain();
       // Le marteau est plus présent dans les forts et dans les aigus
       const noisePeak = Math.min(0.5, peak * (0.25 + 110 / freq));
-      noiseGain.gain.setValueAtTime(noisePeak, now);
-      noiseGain.gain.setTargetAtTime(0.0001, now, 0.012);
+      // Montée très courte (1,5 ms) : un démarrage à pleine amplitude
+      // produit un clic audible à chaque note.
+      noiseGain.gain.setValueAtTime(0, now);
+      noiseGain.gain.linearRampToValueAtTime(noisePeak, now + 0.0015);
+      noiseGain.gain.setTargetAtTime(0.0001, now + 0.0015, 0.012);
       noise.connect(noiseFilter);
       noiseFilter.connect(noiseGain);
       noiseGain.connect(tone);

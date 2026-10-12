@@ -185,7 +185,7 @@ export class Synth {
       noiseFilter.connect(noiseGain);
       noiseGain.connect(tone);
       noise.start(now);
-      noise.stop(now + 0.08);
+      noise.stop(now + 0.15);
     } catch (err) {
       /* attaque ignorée */
     }
@@ -243,13 +243,23 @@ export class Synth {
     const rel = Math.max(0.05, release);
     const param = v.master.gain;
     try {
-      // Gèle l'automatisation à sa valeur courante si possible
-      if (typeof param.cancelAndHoldAtTime === "function") {
-        param.cancelAndHoldAtTime(t);
+      // Valeur courante recalculée analytiquement : l'enveloppe étant
+      // déterministe (attaque 3 ms puis décrément exponentiel), on la
+      // reconstruit plutôt que de lire param.value — que certains moteurs
+      // renvoient périmé par rapport à l'automatisation, ou qui retombe
+      // sur une valeur obsolète après cancelScheduledValues (Firefox),
+      // provoquant un saut audible (clic) en début de release.
+      const floor = Math.max(v.peak * 0.18, 0.001);
+      const tau = Math.max(0.05, v.decayTime / 4);
+      const elapsed = t - v.startedAt;
+      let cur;
+      if (elapsed <= 0.003) {
+        cur = v.peak * Math.max(0, elapsed / 0.003);
       } else {
-        param.cancelScheduledValues(t);
+        cur = floor + (v.peak - floor) * Math.exp(-(elapsed - 0.003) / tau);
       }
-      const cur = Math.max(param.value, 0.0001);
+      cur = Math.max(cur, 0.0001);
+      param.cancelScheduledValues(t);
       param.setValueAtTime(cur, t);
       param.setTargetAtTime(0.0001, t, rel / 5);
     } catch (err) {

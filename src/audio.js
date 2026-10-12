@@ -100,14 +100,20 @@ export function audioState() {
   return ctx ? ctx.state : "absent";
 }
 
-// Partiels typiques d'une corde de piano : fondamentale dominante,
-// harmoniques décroissants, très légèrement étirés (inharmonicité).
+// Bruit d'attaque du marteau : court éclat de bruit filtré passe-bande,
+// mélangé brièvement au début de la note. C'est lui qui donne le caractère
+// percussif « piano » qui manque à une synthèse purement sinusoïdale.
+let noiseBuffer = null;
+
+// Partiels typiques d'une corde de piano. Chaque partiel reçoit sa propre
+// enveloppe : les harmoniques aigus s'éteignent nettement plus vite que la
+// fondamentale (decayFactor, fraction du decay de la note).
 const PARTIALS = [
-  { ratio: 1.0, gain: 1.0 },
-  { ratio: 2.0, gain: 0.42 },
-  { ratio: 3.0, gain: 0.2 },
-  { ratio: 4.0, gain: 0.1 },
-  { ratio: 5.0, gain: 0.05 },
+  { ratio: 1.0, gain: 1.0, decayFactor: 1.0 },
+  { ratio: 2.0, gain: 0.42, decayFactor: 0.7 },
+  { ratio: 3.0, gain: 0.2, decayFactor: 0.5 },
+  { ratio: 4.0, gain: 0.1, decayFactor: 0.35 },
+  { ratio: 5.0, gain: 0.05, decayFactor: 0.25 },
 ];
 
 export class Synth {
@@ -138,10 +144,51 @@ export class Synth {
     // Les notes aiguës s'éteignent plus vite que les graves
     const decayTime = Math.min(6, Math.max(1.2, 880 / freq));
 
-    // Enveloppe : attaque quasi instantanée (3 ms), puis décrément exponentiel naturel
+    // Filtre passe-bas dynamique : la brillance décroît au cours de la
+    // note, comme une corde réelle dont les harmoniques s'éteignent.
+    const tone = c.createBiquadFilter();
+    tone.type = "lowpass";
+    tone.Q.value = 0.5;
+    const bright = Math.min(18000, Math.max(2200, freq * 8));
+    tone.frequency.setValueAtTime(bright, now);
+    tone.frequency.setTargetAtTime(Math.max(800, freq * 2.5), now, decayTime / 4);
+    tone.connect(master);
+
+    // Enveloppe : attaque quasi instantanée (3 ms), puis décrément
+    // exponentiel naturel. Les partiels et le marteau passent par le
+    // filtre dynamique, la sortie reste sur le bus master.
     master.gain.setValueAtTime(0, now);
     master.gain.linearRampToValueAtTime(peak, now + 0.003);
     master.gain.setTargetAtTime(Math.max(peak * 0.18, 0.001), now + 0.003, decayTime / 4);
+
+    // Bruit d'attaque du marteau : court éclat large bande filtré autour
+    // de la frappe, effacé en quelques dizaines de millisecondes.
+    if (!noiseBuffer) {
+      const len = Math.max(1, Math.floor(c.sampleRate * 0.05));
+      noiseBuffer = c.createBuffer(1, len, c.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    }
+    try {
+      const noise = c.createBufferSource();
+      noise.buffer = noiseBuffer;
+      const noiseFilter = c.createBiquadFilter();
+      noiseFilter.type = "bandpass";
+      noiseFilter.frequency.value = Math.min(9000, Math.max(150, freq * 3));
+      noiseFilter.Q.value = 0.8;
+      const noiseGain = c.createGain();
+      // Le marteau est plus présent dans les forts et dans les aigus
+      const noisePeak = Math.min(0.5, peak * (0.25 + 110 / freq));
+      noiseGain.gain.setValueAtTime(noisePeak, now);
+      noiseGain.gain.setTargetAtTime(0.0001, now, 0.012);
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(tone);
+      noise.start(now);
+      noise.stop(now + 0.08);
+    } catch (err) {
+      /* attaque ignorée */
+    }
 
     const oscs = [];
     // Rendu allégé possible : la lecture MIDI peut demander moins de partiels
@@ -151,13 +198,21 @@ export class Synth {
       try {
         const osc = c.createOscillator();
         osc.type = "sine";
-        const f = freq * p.ratio * (1 + i * 0.0008); // inharmonicité légère
+        // Inharmonicité légère + léger désaccord du partiel 2 : les cordes
+        // d'un piano réel sont légèrement désaccordées entre elles.
+        const f = freq * p.ratio * (1 + i * 0.0008) * (i === 1 ? 1.0011 : 1);
         osc.frequency.value = f;
         const g = c.createGain();
         // Les harmoniques aigus s'atténuent dans les notes hautes
-        g.gain.value = p.gain * (i === 0 ? 1 : Math.min(1, 220 / f + 0.35));
+        const pg = p.gain * (i === 0 ? 1 : Math.min(1, 220 / f + 0.35));
+        g.gain.value = pg;
+        // Enveloppe propre à chaque partiel : les harmoniques s'éteignent
+        // plus vite que la fondamentale (décroissance sélective).
+        const pDecay = decayTime * (p.decayFactor || 1);
+        g.gain.setValueAtTime(pg, now);
+        g.gain.setTargetAtTime(Math.max(0.0001, pg * 0.15), now + 0.003, Math.max(0.15, pDecay / 4));
         osc.connect(g);
-        g.connect(master);
+        g.connect(tone);
         osc.start(now);
         oscs.push(osc);
       } catch (err) {
@@ -178,7 +233,6 @@ export class Synth {
     this.active.set(id, { master, oscs, startedAt: now, peak, decayTime });
     return c.state === "running";
   }
-
   noteOff(id, release = 0.25) {
     const v = this.active.get(id);
     if (!v) return;

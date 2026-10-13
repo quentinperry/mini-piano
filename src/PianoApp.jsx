@@ -292,7 +292,7 @@ export default function PianoApp() {
     setMidiProgress(midiPosRef.current);
   };
 
-  const handleMidiNoteOn = (midiNum, velocity, gainScale = 1) => {
+  const handleMidiNoteOn = (midiNum, velocity, gainScale = 1, songT = null) => {
     midiHeldRef.current.add(midiNum);
     // Compression de vélocité : les fichiers de notation encodent leurs
     // nuances de façon brutale (chœur souvent à 127 = forte constante).
@@ -303,9 +303,17 @@ export default function PianoApp() {
       settingsRef.current.volume * (0.35 + (0.65 * compressed) / 127) * gainScale;
     // 3 partiels au lieu de 5 : largement assez pour se caler, et un tiers de
     // charge en moins sur le processeur quand le tutti joue.
+    // Départ sur l'horloge audio quand le lecteur fournit l'instant cible :
+    // la note commence exactement au bon moment même si le timer JS a glissé.
+    const c = ensureAudio();
+    const at =
+      songT !== null && c
+        ? c.currentTime + Math.max(0, songT - (midiPlayerRef.current ? midiPlayerRef.current.getPos() : songT))
+        : null;
     synthRef.current.noteOn("midi-" + midiNum, midiToFreq(midiNum), {
       volume: gain,
       partials: 3,
+      at,
     });
     const key = keyByMidi.get(midiNum);
     if (key) {
@@ -318,9 +326,16 @@ export default function PianoApp() {
     }
   };
 
-  const handleMidiNoteOff = (midiNum) => {
+  const handleMidiNoteOff = (midiNum, songT = null) => {
     midiHeldRef.current.delete(midiNum);
-    synthRef.current.noteOff("midi-" + midiNum, settingsRef.current.release);
+    const c = ensureAudio();
+    if (songT !== null && c) {
+      const at =
+        c.currentTime + Math.max(0, songT - (midiPlayerRef.current ? midiPlayerRef.current.getPos() : songT));
+      synthRef.current.scheduledOff("midi-" + midiNum, at, settingsRef.current.release);
+    } else {
+      synthRef.current.noteOff("midi-" + midiNum, settingsRef.current.release);
+    }
     const key = keyByMidi.get(midiNum);
     if (key) {
       const cur = midiUiIdsRef.current || new Set(midiActiveIds);
@@ -355,7 +370,7 @@ export default function PianoApp() {
         : 1;
     ensureAudio();
     midiPlayerRef.current = createMidiPlayer(events, maxT, {
-      onNoteOn: (m, v) => handleMidiNoteOn(m, v, gainScale),
+      onNoteOn: (m, v, t) => handleMidiNoteOn(m, v, gainScale, t),
       onNoteOff: handleMidiNoteOff,
       onEnd: () => {
         midiPlayerRef.current = null;

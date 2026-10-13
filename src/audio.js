@@ -125,11 +125,14 @@ export class Synth {
     this.maxVoices = 32;
   }
 
-  noteOn(id, freq, { volume = 0.6, partials = PARTIALS.length } = {}) {
+  noteOn(id, freq, { volume = 0.6, partials = PARTIALS.length, at = null } = {}) {
     if (this.active.has(id)) return true;
     const c = ensureAudio();
     if (!c) return false;
-    const now = c.currentTime;
+    // Départ différé sur l'horloge audio : la note commence exactement
+    // à l'instant demandé, même si le fil JS était occupé à ce moment-là.
+    // C'est ce qui rend la lecture MIDI métronomique quoi qu'il arrive.
+    const now = at !== null && at > c.currentTime ? at : c.currentTime;
 
     // Vol de voix : la Map conserve l'ordre d'insertion, la plus ancienne
     // passe la première. Un fondu très court évite les claquements.
@@ -238,6 +241,43 @@ export class Synth {
     this.active.set(id, { master, oscs, startedAt: now, peak, decayTime });
     return c.state === "running";
   }
+  // Coupe planifiée : même logique que noteOff mais à un instant futur
+  // de l'horloge audio, pour que la durée des notes d'une lecture MIDI soit
+  // exacte même si le fil JS est chargé.
+  scheduledOff(id, at, release = 0.25) {
+    const v = this.active.get(id);
+    if (!v) return;
+    this.active.delete(id);
+    const c = ensureAudio();
+    if (!c) return;
+    const rel = Math.max(0.05, release);
+    const param = v.master.gain;
+    try {
+      const floor = Math.max(v.peak * 0.18, 0.001);
+      const tau = Math.max(0.05, v.decayTime / 4);
+      const elapsed = Math.max(0, at - v.startedAt);
+      let cur;
+      if (elapsed <= 0.003) {
+        cur = v.peak * Math.max(0, elapsed / 0.003);
+      } else {
+        cur = floor + (v.peak - floor) * Math.exp(-(elapsed - 0.003) / tau);
+      }
+      cur = Math.max(cur, 0.0001);
+      param.cancelScheduledValues(at);
+      param.setValueAtTime(cur, at);
+      param.setTargetAtTime(0.0001, at, rel / 5);
+    } catch (err) {
+      /* rien */
+    }
+    v.oscs.forEach((o) => {
+      try {
+        o.stop(at + rel + 0.5);
+      } catch (err) {
+        /* déjà arrêté */
+      }
+    });
+  }
+
   noteOff(id, release = 0.25) {
     const v = this.active.get(id);
     if (!v) return;

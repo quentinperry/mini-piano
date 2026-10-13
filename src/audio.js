@@ -209,11 +209,13 @@ export class Synth {
         // Les harmoniques aigus s'atténuent dans les notes hautes
         const pg = p.gain * (i === 0 ? 1 : Math.min(1, 220 / f + 0.35));
         g.gain.value = pg;
-        // Enveloppe propre à chaque partiel : les harmoniques s'éteignent
-        // plus vite que la fondamentale (décroissance sélective).
+        // Enveloppe propre à chaque partiel : plein niveau pendant 20 ms
+        // (frappe nette, sans quoi l'attaque paraît molle), puis les
+        // harmoniques s'éteignent plus vite que la fondamentale.
         const pDecay = decayTime * (p.decayFactor || 1);
         g.gain.setValueAtTime(pg, now);
-        g.gain.setTargetAtTime(Math.max(0.0001, pg * 0.15), now + 0.003, Math.max(0.15, pDecay / 4));
+        g.gain.setValueAtTime(pg, now + 0.02);
+        g.gain.setTargetAtTime(Math.max(0.0001, pg * 0.15), now + 0.02, Math.max(0.15, pDecay / 4));
         osc.connect(g);
         g.connect(tone);
         osc.start(now);

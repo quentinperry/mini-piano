@@ -246,6 +246,33 @@ export default function PianoApp() {
   // sa voix, et suit en rythme : les touches s'illuminent, le son passe par
   // le même synthé que le clavier. La lecture se met en pause et se reprend
   // à la position mémorisée, et le curseur permet de naviguer dans le morceau.
+  // En tutti, chaque note MIDI déclenchait deux mises à jour d'état React
+  // (note affichée + surbrillances), soit des dizaines de re-rendus par
+  // seconde qui saturent le fil JS et font glisser les timers du lecteur
+  // (lecture « hésitante »). Les événements MIDI n'écrivent plus l'état
+  // directement : ils alimentent ces références, et un vidage cadencé à
+  // l'œil (~60 fps) ne met à jour l'interface qu'une fois par frame.
+  const midiUiIdsRef = useRef(null);
+  const midiUiNoteRef = useRef(null);
+  const midiUiDirtyRef = useRef(false);
+  const midiUiFrameRef = useRef(null);
+  const flushMidiUi = () => {
+    midiUiFrameRef.current = null;
+    if (!midiUiDirtyRef.current) return;
+    midiUiDirtyRef.current = false;
+    if (midiUiIdsRef.current) {
+      setMidiActiveIds(midiUiIdsRef.current);
+      midiUiIdsRef.current = null;
+    }
+    if (midiUiNoteRef.current) {
+      setLastNote(midiUiNoteRef.current);
+      midiUiNoteRef.current = null;
+    }
+  };
+  const scheduleMidiUi = () => {
+    if (midiUiFrameRef.current !== null) return;
+    midiUiFrameRef.current = requestAnimationFrame(flushMidiUi);
+  };
   const releaseMidiNotes = () => {
     midiHeldRef.current.forEach((m) =>
       synthRef.current.noteOff("midi-" + m, settingsRef.current.release)
@@ -282,8 +309,12 @@ export default function PianoApp() {
     });
     const key = keyByMidi.get(midiNum);
     if (key) {
-      setLastNote(key);
-      setMidiActiveIds((prev) => new Set(prev).add(key.id));
+      midiUiNoteRef.current = key;
+      const cur = midiUiIdsRef.current || new Set(midiActiveIds);
+      cur.add(key.id);
+      midiUiIdsRef.current = cur;
+      midiUiDirtyRef.current = true;
+      scheduleMidiUi();
     }
   };
 
@@ -292,12 +323,11 @@ export default function PianoApp() {
     synthRef.current.noteOff("midi-" + midiNum, settingsRef.current.release);
     const key = keyByMidi.get(midiNum);
     if (key) {
-      setMidiActiveIds((prev) => {
-        if (!prev.has(key.id)) return prev;
-        const next = new Set(prev);
-        next.delete(key.id);
-        return next;
-      });
+      const cur = midiUiIdsRef.current || new Set(midiActiveIds);
+      cur.delete(key.id);
+      midiUiIdsRef.current = cur;
+      midiUiDirtyRef.current = true;
+      scheduleMidiUi();
     }
   };
 

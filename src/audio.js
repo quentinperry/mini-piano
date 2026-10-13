@@ -182,8 +182,8 @@ export class Synth {
       // Montée très courte (1,5 ms) : un démarrage à pleine amplitude
       // produit un clic audible à chaque note.
       noiseGain.gain.setValueAtTime(0, now);
-      noiseGain.gain.linearRampToValueAtTime(noisePeak, now + 0.0015);
-      noiseGain.gain.setTargetAtTime(0.0001, now + 0.0015, 0.012);
+      noiseGain.gain.linearRampToValueAtTime(noisePeak, now + 0.0005);
+      noiseGain.gain.setTargetAtTime(0.0001, now + 0.0015, 0.01);
       noise.connect(noiseFilter);
       noiseFilter.connect(noiseGain);
       noiseGain.connect(tone);

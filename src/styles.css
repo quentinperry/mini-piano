@@ -483,3 +483,19 @@
   min-width: 32px;
   text-align: center;
 }
+
+/* Option « Pause en arrière-plan » de la lecture MIDI */
+.midi-pause-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  opacity: 0.85;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.midi-pause-opt input {
+  accent-color: var(--accent, #4a90d9);
+  margin: 0;
+}

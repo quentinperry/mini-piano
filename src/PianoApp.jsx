@@ -70,6 +70,11 @@ export default function PianoApp() {
   const [midiPlaying, setMidiPlaying] = useState(false);
   const [midiActiveIds, setMidiActiveIds] = useState(() => new Set());
   const [midiError, setMidiError] = useState(null);
+  // Pause automatique quand l'app passe en arrière-plan (écran verrouillé,
+  // onglet caché) : optionnelle et désactivée par défaut, chacun choisit.
+  const [pauseOnHidden, setPauseOnHidden] = useState(false);
+  const pauseOnHiddenRef = useRef(false);
+  pauseOnHiddenRef.current = pauseOnHidden;
   // Position dans le morceau (seconde), mémorisée d'une pause à l'autre
   const [midiProgress, setMidiProgress] = useState(0);
   // Morceaux intégrés : liste découverte au chargement (null = en cours),
@@ -252,6 +257,8 @@ export default function PianoApp() {
   // (lecture « hésitante »). Les événements MIDI n'écrivent plus l'état
   // directement : ils alimentent ces références, et un vidage cadencé à
   // l'œil (~60 fps) ne met à jour l'interface qu'une fois par frame.
+  const midiPlayingRef = useRef(false);
+  const pauseMidiRef = useRef(null);
   const midiUiIdsRef = useRef(null);
   const midiUiNoteRef = useRef(null);
   const midiUiDirtyRef = useRef(false);
@@ -292,6 +299,8 @@ export default function PianoApp() {
     setMidiProgress(midiPosRef.current);
   };
 
+  midiPlayingRef.current = midiPlaying;
+  pauseMidiRef.current = pauseMidi;
   const handleMidiNoteOn = (midiNum, velocity, gainScale = 1, songT = null) => {
     midiHeldRef.current.add(midiNum);
     // Compression de vélocité : les fichiers de notation encodent leurs
@@ -401,6 +410,21 @@ export default function PianoApp() {
       setMidiProgress(to);
     }
   };
+
+  // Option « pause en arrière-plan » : à l'écran verrouillé ou onglet
+  // caché, les timers JS sont gelés et la lecture dérive. Si l'option est
+  // cochée, on met en pause et on mémorise la position ; sinon on ne touche
+  // à rien, au choix de l'utilisateur.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const onHide = () => {
+      if (document.hidden && pauseOnHiddenRef.current && midiPlayingRef.current) {
+        pauseMidiRef.current();
+      }
+    };
+    document.addEventListener("visibilitychange", onHide);
+    return () => document.removeEventListener("visibilitychange", onHide);
+  }, []);
 
   // Barre de progression : rafraîchie pendant la lecture uniquement.
   useEffect(() => {
@@ -676,6 +700,14 @@ export default function PianoApp() {
                       ? "Reprendre"
                       : "Lire"}
                 </button>
+                <label className="midi-pause-opt">
+                  <input
+                    type="checkbox"
+                    checked={pauseOnHidden}
+                    onChange={(e) => setPauseOnHidden(e.target.checked)}
+                  />
+                  Pause en arrière-plan
+                </label>
               </div>
             </>
           )}

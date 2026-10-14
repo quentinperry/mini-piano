@@ -70,6 +70,11 @@ export default function PianoApp() {
   const [midiPlaying, setMidiPlaying] = useState(false);
   const [midiActiveIds, setMidiActiveIds] = useState(() => new Set());
   const [midiError, setMidiError] = useState(null);
+  // Pause automatique quand l'app passe en arrière-plan (écran verrouillé,
+  // onglet caché) : optionnelle et désactivée par défaut, chacun choisit.
+  const [pauseOnHidden, setPauseOnHidden] = useState(false);
+  const pauseOnHiddenRef = useRef(false);
+  pauseOnHiddenRef.current = pauseOnHidden;
   // Position dans le morceau (seconde), mémorisée d'une pause à l'autre
   const [midiProgress, setMidiProgress] = useState(0);
   // Morceaux intégrés : liste découverte au chargement (null = en cours),
@@ -246,6 +251,35 @@ export default function PianoApp() {
   // sa voix, et suit en rythme : les touches s'illuminent, le son passe par
   // le même synthé que le clavier. La lecture se met en pause et se reprend
   // à la position mémorisée, et le curseur permet de naviguer dans le morceau.
+  // En tutti, chaque note MIDI déclenchait deux mises à jour d'état React
+  // (note affichée + surbrillances), soit des dizaines de re-rendus par
+  // seconde qui saturent le fil JS et font glisser les timers du lecteur
+  // (lecture « hésitante »). Les événements MIDI n'écrivent plus l'état
+  // directement : ils alimentent ces références, et un vidage cadencé à
+  // l'œil (~60 fps) ne met à jour l'interface qu'une fois par frame.
+  const midiPlayingRef = useRef(false);
+  const pauseMidiRef = useRef(null);
+  const midiUiIdsRef = useRef(null);
+  const midiUiNoteRef = useRef(null);
+  const midiUiDirtyRef = useRef(false);
+  const midiUiFrameRef = useRef(null);
+  const flushMidiUi = () => {
+    midiUiFrameRef.current = null;
+    if (!midiUiDirtyRef.current) return;
+    midiUiDirtyRef.current = false;
+    if (midiUiIdsRef.current) {
+      setMidiActiveIds(midiUiIdsRef.current);
+      midiUiIdsRef.current = null;
+    }
+    if (midiUiNoteRef.current) {
+      setLastNote(midiUiNoteRef.current);
+      midiUiNoteRef.current = null;
+    }
+  };
+  const scheduleMidiUi = () => {
+    if (midiUiFrameRef.current !== null) return;
+    midiUiFrameRef.current = requestAnimationFrame(flushMidiUi);
+  };
   const releaseMidiNotes = () => {
     midiHeldRef.current.forEach((m) =>
       synthRef.current.noteOff("midi-" + m, settingsRef.current.release)
@@ -265,7 +299,9 @@ export default function PianoApp() {
     setMidiProgress(midiPosRef.current);
   };
 
-  const handleMidiNoteOn = (midiNum, velocity, gainScale = 1) => {
+  midiPlayingRef.current = midiPlaying;
+  pauseMidiRef.current = pauseMidi;
+  const handleMidiNoteOn = (midiNum, velocity, gainScale = 1, songT = null) => {
     midiHeldRef.current.add(midiNum);
     // Compression de vélocité : les fichiers de notation encodent leurs
     // nuances de façon brutale (chœur souvent à 127 = forte constante).
@@ -276,28 +312,46 @@ export default function PianoApp() {
       settingsRef.current.volume * (0.35 + (0.65 * compressed) / 127) * gainScale;
     // 3 partiels au lieu de 5 : largement assez pour se caler, et un tiers de
     // charge en moins sur le processeur quand le tutti joue.
+    // Départ sur l'horloge audio quand le lecteur fournit l'instant cible :
+    // la note commence exactement au bon moment même si le timer JS a glissé.
+    const c = ensureAudio();
+    const at =
+      songT !== null && c
+        ? c.currentTime + Math.max(0, songT - (midiPlayerRef.current ? midiPlayerRef.current.getPos() : songT))
+        : null;
     synthRef.current.noteOn("midi-" + midiNum, midiToFreq(midiNum), {
       volume: gain,
       partials: 3,
+      at,
     });
     const key = keyByMidi.get(midiNum);
     if (key) {
-      setLastNote(key);
-      setMidiActiveIds((prev) => new Set(prev).add(key.id));
+      midiUiNoteRef.current = key;
+      const cur = midiUiIdsRef.current || new Set(midiActiveIds);
+      cur.add(key.id);
+      midiUiIdsRef.current = cur;
+      midiUiDirtyRef.current = true;
+      scheduleMidiUi();
     }
   };
 
-  const handleMidiNoteOff = (midiNum) => {
+  const handleMidiNoteOff = (midiNum, songT = null) => {
     midiHeldRef.current.delete(midiNum);
-    synthRef.current.noteOff("midi-" + midiNum, settingsRef.current.release);
+    const c = ensureAudio();
+    if (songT !== null && c) {
+      const at =
+        c.currentTime + Math.max(0, songT - (midiPlayerRef.current ? midiPlayerRef.current.getPos() : songT));
+      synthRef.current.scheduledOff("midi-" + midiNum, at, settingsRef.current.release);
+    } else {
+      synthRef.current.noteOff("midi-" + midiNum, settingsRef.current.release);
+    }
     const key = keyByMidi.get(midiNum);
     if (key) {
-      setMidiActiveIds((prev) => {
-        if (!prev.has(key.id)) return prev;
-        const next = new Set(prev);
-        next.delete(key.id);
-        return next;
-      });
+      const cur = midiUiIdsRef.current || new Set(midiActiveIds);
+      cur.delete(key.id);
+      midiUiIdsRef.current = cur;
+      midiUiDirtyRef.current = true;
+      scheduleMidiUi();
     }
   };
 
@@ -325,7 +379,7 @@ export default function PianoApp() {
         : 1;
     ensureAudio();
     midiPlayerRef.current = createMidiPlayer(events, maxT, {
-      onNoteOn: (m, v) => handleMidiNoteOn(m, v, gainScale),
+      onNoteOn: (m, v, t) => handleMidiNoteOn(m, v, gainScale, t),
       onNoteOff: handleMidiNoteOff,
       onEnd: () => {
         midiPlayerRef.current = null;
@@ -356,6 +410,21 @@ export default function PianoApp() {
       setMidiProgress(to);
     }
   };
+
+  // Option « pause en arrière-plan » : à l'écran verrouillé ou onglet
+  // caché, les timers JS sont gelés et la lecture dérive. Si l'option est
+  // cochée, on met en pause et on mémorise la position ; sinon on ne touche
+  // à rien, au choix de l'utilisateur.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const onHide = () => {
+      if (document.hidden && pauseOnHiddenRef.current && midiPlayingRef.current) {
+        pauseMidiRef.current();
+      }
+    };
+    document.addEventListener("visibilitychange", onHide);
+    return () => document.removeEventListener("visibilitychange", onHide);
+  }, []);
 
   // Barre de progression : rafraîchie pendant la lecture uniquement.
   useEffect(() => {
@@ -596,6 +665,14 @@ export default function PianoApp() {
                 {midi.name} · {formatMidiTime(midi.duration)}
               </span>
               <div className="midi-seek">
+                <button
+                  type="button"
+                  className="midi-step"
+                  onClick={() => seekMidi((midiPlayerRef.current ? midiPlayerRef.current.getPos() : midiProgress) - 10)}
+                  aria-label="Reculer de 10 secondes"
+                >
+                  −10 s
+                </button>
                 <span className="midi-time">{formatMidiTime(Math.min(midiProgress, midi.duration))}</span>
                 <input
                   type="range"
@@ -607,6 +684,14 @@ export default function PianoApp() {
                   aria-label="Position dans le morceau"
                 />
                 <span className="midi-time">{formatMidiTime(midi.duration)}</span>
+                <button
+                  type="button"
+                  className="midi-step"
+                  onClick={() => seekMidi((midiPlayerRef.current ? midiPlayerRef.current.getPos() : midiProgress) + 10)}
+                  aria-label="Avancer de 10 secondes"
+                >
+                  +10 s
+                </button>
               </div>
               <div className="voice-btns midi-row">
                 <select value={midiTrack} onChange={changeMidiTrack} aria-label="Piste à jouer">
@@ -631,6 +716,14 @@ export default function PianoApp() {
                       ? "Reprendre"
                       : "Lire"}
                 </button>
+                <label className="midi-pause-opt">
+                  <input
+                    type="checkbox"
+                    checked={pauseOnHidden}
+                    onChange={(e) => setPauseOnHidden(e.target.checked)}
+                  />
+                  Pause en arrière-plan
+                </label>
               </div>
             </>
           )}

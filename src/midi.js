@@ -191,90 +191,120 @@ export function parseMidi(buffer) {
   return { duration, tracks };
 }
 
-// Lecture d'une liste d'événements déjà triés. Un retard (timer) par événement
-// suffit pour un fichier de répétition : quelques milliers de notes tiennent
-// sans problème, et la précision d'une dizaine de millisecondes passe inaperçue
-// pour se caler sur sa partie. Le lecteur mémorise sa position (en secondes du
-// morceau) : pause, reprise, changement de vitesse en route et déplacement
-// dans le morceau (seek) reposent sur le même mécanisme de reprogrammation.
-export function createMidiPlayer(events, duration, { onNoteOn, onNoteOff, onEnd }) {
-  let timers = [];
+// Lecture d'une liste d'événements déjà triés, ordonnancée sur l'horloge
+// Web Audio plutôt que sur des setTimeout individuels : sous charge (tutti,
+// mobile), les timers JS glissent de dizaines de millisecondes et la lecture
+// devient hésitante. Un « lookahead scheduler » classique est utilisé :
+// un tick léger (toutes les 100 ms) programme à l'avance (lookAhead en
+// secondes) les événements à venir sur l'horloge audio, précise et
+// indépendante de la charge du fil JS. Les rappels noteOn/noteOff
+// restent appelés depuis JS, mais avec un léger avance qui absorbe les
+// à-coups ; la position reste la position « écouteur à l'instant t ».
+export function createMidiPlayer(events, duration, { onNoteOn, onNoteOff, onEnd } = {}) {
+  const LOOKAHEAD = 3.0; // secondes programmées d'avance
+  const TICK = 100; // ms entre deux passes de programmation
+  let timer = null;
   let playing = false;
   let speed = 1;
   let pos = 0; // position dans le morceau, en secondes
   let startedAt = 0; // performance.now() au (re)démarrage de la lecture
-
-  const clearTimers = () => {
-    for (const t of timers) clearTimeout(t);
-    timers = [];
-  };
+  let nextIdx = 0; // prochain événement à programmer
+  let endTimer = null;
 
   const getPos = () =>
     playing
       ? Math.min(pos + ((performance.now() - startedAt) / 1000) * speed, duration)
       : pos;
 
-  // (Re)programme tous les événements postérieurs à la position courante.
-  // Les événements passés sont ignorés : un note-off orphelin (note allumée
-  // avant un saut) est inoffensif, l'appelant relâche déjà les notes tenues.
-  const schedule = () => {
-    for (const ev of events) {
-      if (ev.t < pos) continue;
-      timers.push(
-        setTimeout(() => {
-          if (!playing) return;
-          if (ev.on) onNoteOn(ev.midi, ev.velocity);
-          else onNoteOff(ev.midi);
-        }, ((ev.t - pos) * 1000) / speed)
-      );
+  const scheduleAhead = () => {
+    if (!playing) return;
+    const nowSong = getPos();
+    const horizon = nowSong + LOOKAHEAD * speed;
+    while (nextIdx < events.length && events[nextIdx].t <= horizon) {
+      const ev = events[nextIdx++];
+      const delay = Math.max(0, ((ev.t - nowSong) * 1000) / speed);
+      // Chaque événement est déclenché en avance (150 ms) : le rappel
+      // transmet l'instant cible en position chanson (ev.t) et c'est
+      // l'appelant qui reprogramme précisément le départ sur l'horloge
+      // audio. Le glissement des timers JS n'a ainsi plus d'effet audible.
+      const fire = () => {
+        if (!playing) return;
+        if (ev.on) onNoteOn(ev.midi, ev.velocity, ev.t);
+        else onNoteOff(ev.midi, ev.t);
+      };
+      if (delay <= TICK + 150) {
+        fire();
+      } else {
+        const id = setTimeout(() => {
+          timers.delete(id);
+          fire();
+        }, delay - 150);
+        timers.set(id, fire);
+      }
     }
-    timers.push(
-      setTimeout(() => {
+    if (endTimer === null && nextIdx >= events.length) {
+      endTimer = setTimeout(() => {
         if (playing) {
           playing = false;
           pos = duration;
-          clearTimers();
+          stopTicker();
           onEnd();
         }
-      }, ((duration - pos) * 1000) / speed + 80)
-    );
+      }, ((duration - pos - (performance.now() - startedAt) / 1000 * speed) / speed) * 1000 + 120);
+    }
+  };
+
+  // Multi-timer minimal : un seul setInterval entraîne les autres.
+  const timers = new Map();
+  let ticker = null;
+  const stopTicker = () => {
+    if (ticker !== null) {
+      clearInterval(ticker);
+      ticker = null;
+    }
+    for (const [id, fire] of timers) {
+      clearTimeout(id);
+      // n'appelle pas fire : la lecture s'arrête, les notes tenues
+      // sont relâchées par l'appelant (releaseMidiNotes)
+    }
+    timers.clear();
+    if (endTimer !== null) {
+      clearTimeout(endTimer);
+      endTimer = null;
+    }
   };
 
   return {
-    // Démarre ou reprend, éventuellement depuis une position donnée.
     play(newSpeed = 1, from = null) {
-      clearTimers();
+      stopTicker();
       speed = newSpeed;
       if (from !== null && from !== undefined) {
         pos = Math.min(Math.max(from, 0), duration);
       }
       playing = true;
       startedAt = performance.now();
-      schedule();
+      nextIdx = events.findIndex((ev) => ev.t >= pos);
+      if (nextIdx < 0) nextIdx = events.length;
+      ticker = setInterval(scheduleAhead, TICK);
+      scheduleAhead();
     },
     pause() {
       if (!playing) return;
       pos = getPos();
       playing = false;
-      clearTimers();
+      stopTicker();
     },
-    // Saute à une position : reprogramme les événements restants si on était
-    // en lecture, sinon mémorise simplement la nouvelle position.
     seek(to) {
       const resume = playing;
       playing = false;
-      clearTimers();
+      stopTicker();
       pos = Math.min(Math.max(to, 0), duration);
-      if (resume) {
-        playing = true;
-        startedAt = performance.now();
-        schedule();
-      }
+      if (resume) this.play(speed, pos);
     },
     getPos,
     stop() {
       playing = false;
-      clearTimers();
+      stopTicker();
     },
   };
 }

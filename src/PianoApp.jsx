@@ -665,6 +665,14 @@ export default function PianoApp() {
                 {midi.name} · {formatMidiTime(midi.duration)}
               </span>
               <div className="midi-seek">
+                <button
+                  type="button"
+                  className="midi-step"
+                  onClick={() => seekMidi((midiPlayerRef.current ? midiPlayerRef.current.getPos() : midiProgress) - 10)}
+                  aria-label="Reculer de 10 secondes"
+                >
+                  −10 s
+                </button>
                 <span className="midi-time">{formatMidiTime(Math.min(midiProgress, midi.duration))}</span>
                 <input
                   type="range"
@@ -676,6 +684,14 @@ export default function PianoApp() {
                   aria-label="Position dans le morceau"
                 />
                 <span className="midi-time">{formatMidiTime(midi.duration)}</span>
+                <button
+                  type="button"
+                  className="midi-step"
+                  onClick={() => seekMidi((midiPlayerRef.current ? midiPlayerRef.current.getPos() : midiProgress) + 10)}
+                  aria-label="Avancer de 10 secondes"
+                >
+                  +10 s
+                </button>
               </div>
               <div className="voice-btns midi-row">
                 <select value={midiTrack} onChange={changeMidiTrack} aria-label="Piste à jouer">

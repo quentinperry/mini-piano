@@ -4,6 +4,36 @@ let ctx = null;
 let masterBus = null;
 let silentEl = null;
 
+// Abonnés aux changements d'état du contexte audio (running, suspended,
+// closed...) : le navigateur peut suspendre le contexte de son propre chef
+// (onglet en arrière-plan, économie d'énergie), l'interface doit le savoir.
+const stateListeners = new Set();
+
+function emitAudioState() {
+  if (!ctx) return;
+  for (const cb of stateListeners) {
+    try {
+      cb(ctx.state);
+    } catch (err) {
+      /* un abonné défaillant ne bloque pas les autres */
+    }
+  }
+}
+
+// S'abonne aux changements d'état de l'AudioContext. Renvoie la fonction
+// de désabonnement. L'état courant est aussitôt renvoyé si un contexte existe.
+export function onAudioStateChange(cb) {
+  stateListeners.add(cb);
+  if (ctx) {
+    try {
+      cb(ctx.state);
+    } catch (err) {
+      /* idem */
+    }
+  }
+  return () => stateListeners.delete(cb);
+}
+
 // Génère un WAV d'une seconde de silence (8 kHz, 8 bits) sans fichier externe.
 function makeSilentWavUrl() {
   const sampleRate = 8000;
@@ -79,6 +109,7 @@ export function ensureAudio() {
       masterBus.gain.value = 0.9;
       masterBus.connect(limiter);
       limiter.connect(ctx.destination);
+      ctx.addEventListener("statechange", emitAudioState);
     } catch (err) {
       ctx = null;
       return null;
@@ -93,6 +124,7 @@ export function ensureAudio() {
     }
   }
   bypassSilentSwitch();
+  emitAudioState();
   return ctx;
 }
 

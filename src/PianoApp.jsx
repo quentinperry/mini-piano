@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Synth, ensureAudio, audioState } from "./audio";
+import { Synth, ensureAudio, audioState, suspendAudio } from "./audio";
 import { buildKeys, buildKeyMap, midiToFreq } from "./notes";
 import { parseMidi, createMidiPlayer } from "./midi";
 import { listBuiltInSongs, fetchBuiltInSong } from "./songs";
@@ -77,8 +77,8 @@ export default function PianoApp() {
   pauseOnHiddenRef.current = pauseOnHidden;
   // Position dans le morceau (seconde), mémorisée d'une pause à l'autre
   const [midiProgress, setMidiProgress] = useState(0);
-  // Morceaux intégrés : liste découverte au chargement (null = en cours),
-  // morceau sélectionné dans le menu, morceau en cours de chargement
+  // Morceaux intégrés : liste découverte à la première ouverture du menu
+  // (null = pas encore demandée), morceau sélectionné, morceau en cours de chargement
   const [songs, setSongs] = useState(null);
   const [selectedSong, setSelectedSong] = useState("");
   const [songLoading, setSongLoading] = useState(null);
@@ -414,16 +414,41 @@ export default function PianoApp() {
   // Option « pause en arrière-plan » : à l'écran verrouillé ou onglet
   // caché, les timers JS sont gelés et la lecture dérive. Si l'option est
   // cochée, on met en pause et on mémorise la position ; sinon on ne touche
-  // à rien, au choix de l'utilisateur.
+  // à rien, au choix de l'utilisateur. Dans tous les cas, on relâche les notes
+  // tenues (évite une note bloquée au retour) et, si rien ne joue, on suspend
+  // le contexte audio pour économiser la batterie ; au retour au premier plan
+  // (y compris restauration bfcache via pageshow), on relance l'audio.
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const onHide = () => {
-      if (document.hidden && pauseOnHiddenRef.current && midiPlayingRef.current) {
-        pauseMidiRef.current();
+    const onVisibility = () => {
+      if (document.hidden) {
+        if (pauseOnHiddenRef.current && midiPlayingRef.current) {
+          pauseMidiRef.current();
+        }
+        keyHeld.current.forEach((id) => noteOff(id));
+        keyHeld.current.clear();
+        pointerHeld.current.forEach((id) => noteOff(id));
+        pointerHeld.current.clear();
+        if (!midiPlayingRef.current && synthRef.current.active.size === 0) {
+          suspendAudio();
+        }
+      } else {
+        ensureAudio();
+        setAudioStatus(audioState());
       }
     };
-    document.addEventListener("visibilitychange", onHide);
-    return () => document.removeEventListener("visibilitychange", onHide);
+    const onPageShow = (e) => {
+      if (e.persisted) {
+        ensureAudio();
+        setAudioStatus(audioState());
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pageshow", onPageShow);
+    };
   }, []);
 
   // Barre de progression : rafraîchie pendant la lecture uniquement.
@@ -435,22 +460,16 @@ export default function PianoApp() {
     return () => clearInterval(id);
   }, [midiPlaying]);
 
-  // Morceaux intégrés : liste découverte au démarrage. En cas d'échec
+  // Morceaux intégrés : la liste (appel API GitHub) n'est demandée qu'à la
+  // première ouverture du menu, pas au chargement de la page. En cas d'échec
   // (hors ligne, quota), le menu ne s'affiche pas et l'ouverture manuelle
   // d'un fichier reste disponible.
-  useEffect(() => {
-    let alive = true;
+  const loadSongs = () => {
+    if (songs !== null) return;
     listBuiltInSongs()
-      .then((list) => {
-        if (alive) setSongs(list);
-      })
-      .catch(() => {
-        if (alive) setSongs([]);
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
+      .then((list) => setSongs(list))
+      .catch(() => setSongs([]));
+  };
 
   // Changer de piste ou de vitesse garde la position : on poursuit au même
   // endroit du morceau, comme le ferait un lecteur audio.
@@ -637,8 +656,12 @@ export default function PianoApp() {
           </div>
           {songs === null && (
             <div className="voice-btns">
-              <select disabled aria-label="Morceaux intégrés">
-                <option>Liste des morceaux…</option>
+              <select
+                onFocus={loadSongs}
+                onClick={loadSongs}
+                aria-label="Morceaux intégrés"
+              >
+                <option>Morceaux intégrés…</option>
               </select>
             </div>
           )}

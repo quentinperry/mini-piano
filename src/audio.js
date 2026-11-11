@@ -100,6 +100,20 @@ export function audioState() {
   return ctx ? ctx.state : "absent";
 }
 
+// Suspension volontaire du contexte quand la page passe en arrière-plan
+// sans rien jouer : le moteur audio cesse de consommer du CPU (batterie).
+// ensureAudio() le relance à la moindre interaction ou au retour au premier plan.
+export function suspendAudio() {
+  if (ctx && ctx.state === "running") {
+    try {
+      const p = ctx.suspend();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch (err) {
+      /* rien */
+    }
+  }
+}
+
 // Bruit d'attaque du marteau : court éclat de bruit filtré passe-bande,
 // mélangé brièvement au début de la note. C'est lui qui donne le caractère
 // percussif « piano » qui manque à une synthèse purement sinusoïdale.

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Synth, ensureAudio, audioState, suspendAudio } from "./audio";
+import { Synth, ensureAudio, audioState, suspendAudio, onAudioStateChange } from "./audio";
 import { buildKeys, buildKeyMap, midiToFreq } from "./notes";
 import { parseMidi, createMidiPlayer } from "./midi";
 import { listBuiltInSongs, fetchBuiltInSong } from "./songs";
@@ -146,6 +146,10 @@ export default function PianoApp() {
     ensureAudio();
     setAudioStatus(audioState());
   }, []);
+
+  // Le navigateur peut suspendre ou reprendre le contexte audio de lui-même
+  // (onglet en arrière-plan, verrouillage écran) : le badge suit l'état réel.
+  useEffect(() => onAudioStateChange((s) => setAudioStatus(s)), []);
 
   // Plein écran : indisponible sur iPhone (Safari) et dans certaines iframes
   // de rendu, le bouton se cache alors automatiquement.
@@ -466,9 +470,9 @@ export default function PianoApp() {
   // d'un fichier reste disponible.
   const loadSongs = () => {
     if (songs !== null) return;
-    listBuiltInSongs()
-      .then((list) => setSongs(list))
-      .catch(() => setSongs([]));
+    // Stale-while-revalidate : le cache local s'affiche tout de suite,
+    // la liste fraîche arrive ensuite via le callback.
+    listBuiltInSongs((list) => setSongs(list)).catch(() => setSongs([]));
   };
 
   // Changer de piste ou de vitesse garde la position : on poursuit au même

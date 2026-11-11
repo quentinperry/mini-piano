@@ -11,7 +11,6 @@ const SONGS_API_URL =
 const SONGS_RAW_BASE =
   "https://raw.githubusercontent.com/quentinperry/mini-piano/main/public/songs/";
 const SONGS_CACHE_KEY = "mini-piano-songs-v1";
-const SONGS_CACHE_MAX_AGE = 24 * 3600 * 1000; // une relecture par jour suffit
 
 // Libellé lisible à partir du nom de fichier : « 01kyrie.mid » s'affichera
 // « 01 Kyrie ». Celui qui dépose les fichiers garde la main : espaces,
@@ -27,9 +26,24 @@ function titleFromFileName(name) {
     .trim();
 }
 
-// Liste des morceaux disponibles. En cas d'échec (hors ligne, quota API),
-// on retombe sur la dernière liste connue, stockée localement.
-export async function listBuiltInSongs() {
+function readSongsCache() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SONGS_CACHE_KEY));
+    if (raw && Array.isArray(raw.list)) return raw.list;
+  } catch (err) {
+    /* stockage indisponible (mode privé, quota) : sans conséquence */
+  }
+  return null;
+}
+
+// Liste des morceaux en « stale-while-revalidate » : la dernière liste
+// connue (stockée localement) est servie immédiatement via onUpdate, sans
+// attendre le réseau, puis la liste est rafraîchie en arrière-plan depuis
+// l'API GitHub et renvoyée via onUpdate si elle a changé. En cas d'échec
+// réseau (hors ligne, quota API), on retombe sur la liste connue.
+export async function listBuiltInSongs(onUpdate) {
+  const cached = readSongsCache();
+  if (cached && typeof onUpdate === "function") onUpdate(cached);
   try {
     const res = await fetch(SONGS_API_URL, {
       headers: { Accept: "application/vnd.github+json" },
@@ -45,16 +59,10 @@ export async function listBuiltInSongs() {
     } catch (err) {
       /* stockage indisponible (mode privé, quota) : sans conséquence */
     }
+    if (typeof onUpdate === "function") onUpdate(list);
     return list;
   } catch (err) {
-    try {
-      const raw = JSON.parse(localStorage.getItem(SONGS_CACHE_KEY));
-      if (raw && raw.list && Date.now() - raw.at < SONGS_CACHE_MAX_AGE) {
-        return raw.list;
-      }
-    } catch (err2) {
-      /* pas de liste connue : on remonte l'erreur */
-    }
+    if (cached) return cached;
     throw err;
   }
 }

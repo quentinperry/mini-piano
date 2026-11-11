@@ -227,12 +227,26 @@ export default function PianoApp() {
     };
   }, [keyMap]);
 
-  // Nettoyage au démontage / changement d'octave ou de gabarit
+  // Démontage du composant : on coupe tout, lecteur MIDI compris.
   useEffect(() => {
     return () => {
       synthRef.current.stopAll(0.05);
       if (midiPlayerRef.current) midiPlayerRef.current.stop();
       midiHeldRef.current.clear();
+      keyHeld.current.clear();
+      pointerHeld.current.clear();
+    };
+  }, []);
+
+  // Changement d'octave ou de gabarit (rotation portrait/paysage) : on relâche
+  // seulement les notes tenues au clavier ou à la souris, dont les touches
+  // peuvent avoir disparu. La lecture MIDI continue : ses notes ne dépendent
+  // pas du gabarit affiché (chooseVoice/shiftOctave la mettent déjà en pause
+  // explicitement quand c'est voulu).
+  useEffect(() => {
+    return () => {
+      keyHeld.current.forEach((id) => synthRef.current.noteOff(id, 0.05));
+      pointerHeld.current.forEach((id) => synthRef.current.noteOff(id, 0.05));
       keyHeld.current.clear();
       pointerHeld.current.clear();
     };

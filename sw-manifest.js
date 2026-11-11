@@ -1,0 +1,1 @@
+self.__SW_ASSETS__ = ["assets/index-B7F-HT8f.js","assets/index-TuhokEZH.css","icon.svg","index.html","manifest.webmanifest","songs/01kyrie.mid","songs/02gloria.mid","songs/03gratias.mid","songs/04quitollis.mid","songs/05cumsancto.mid","songs/06credo.mid","songs/07sanctus.mid","songs/08osanna.mid","songs/README.md","songs/Rameau - La nuit.mid","sw.js"];

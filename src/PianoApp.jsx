@@ -18,6 +18,10 @@ const TESSITURES = [
   { id: "basse", label: "Basse", base: 40 },     // Mi2 – Mi4
 ];
 const DEFAULT_TESSITURE = "tenor";
+// Piste choisie « mise en avant » : les autres pistes jouent en fond, à ce
+// facteur de gain (environ −11 dB), pour garder l'harmonie sans couvrir
+// la voix travaillée.
+const BACKGROUND_GAIN = 0.28;
 // Portrait : 17 demi-tons. Paysage : 25 demi-tons (toute la tessiture).
 const NARROW_COUNT = 17;
 const WIDE_COUNT = 25;
@@ -75,6 +79,9 @@ export default function PianoApp() {
   // Fichier MIDI : analyse, piste choisie, vitesse, lecture en cours
   const [midi, setMidi] = useState(null);
   const [midiTrack, setMidiTrack] = useState("all");
+  // Avec une piste choisie : « lead » = mise en avant, les autres pistes
+  // restent audibles plus doucement (par défaut) ; « solo » = piste seule.
+  const [midiMix, setMidiMix] = useState("lead");
   const [midiSpeed, setMidiSpeed] = useState(1);
   const [midiPlaying, setMidiPlaying] = useState(false);
   const [midiActiveIds, setMidiActiveIds] = useState(() => new Set());
@@ -308,8 +315,8 @@ export default function PianoApp() {
     midiUiFrameRef.current = requestAnimationFrame(flushMidiUi);
   };
   const releaseMidiNotes = () => {
-    midiHeldRef.current.forEach((m) =>
-      synthRef.current.noteOff("midi-" + m, settingsRef.current.release)
+    midiHeldRef.current.forEach((voiceId) =>
+      synthRef.current.noteOff(voiceId, settingsRef.current.release)
     );
     midiHeldRef.current.clear();
     setMidiActiveIds(new Set());
@@ -328,8 +335,12 @@ export default function PianoApp() {
 
   midiPlayingRef.current = midiPlaying;
   pauseMidiRef.current = pauseMidi;
-  const handleMidiNoteOn = (midiNum, velocity, gainScale = 1, songT = null) => {
-    midiHeldRef.current.add(midiNum);
+  // Les notes d'accompagnement (pistes de fond) ont leurs propres voix de
+  // synthé, pour qu'un unisson avec la piste mise en avant ne la coupe pas,
+  // et elles n'allument pas le clavier : seule la voix travaillée s'affiche.
+  const handleMidiNoteOn = (midiNum, velocity, gainScale = 1, songT = null, bg = false) => {
+    const voiceId = (bg ? "midibg-" : "midi-") + midiNum;
+    midiHeldRef.current.add(voiceId);
     // Compression de vélocité : les fichiers de notation encodent leurs
     // nuances de façon brutale (chœur souvent à 127 = forte constante).
     // On remappe 0-127 sur 48-105 pour garder les nuances audibles sans
@@ -346,11 +357,12 @@ export default function PianoApp() {
       songT !== null && c
         ? c.currentTime + Math.max(0, songT - (midiPlayerRef.current ? midiPlayerRef.current.getPos() : songT))
         : null;
-    synthRef.current.noteOn("midi-" + midiNum, midiToFreq(midiNum), {
+    synthRef.current.noteOn(voiceId, midiToFreq(midiNum), {
       volume: gain,
       partials: 3,
       at,
     });
+    if (bg) return;
     const key = keyByMidi.get(midiNum);
     if (key) {
       midiUiNoteRef.current = key;
@@ -362,16 +374,18 @@ export default function PianoApp() {
     }
   };
 
-  const handleMidiNoteOff = (midiNum, songT = null) => {
-    midiHeldRef.current.delete(midiNum);
+  const handleMidiNoteOff = (midiNum, songT = null, bg = false) => {
+    const voiceId = (bg ? "midibg-" : "midi-") + midiNum;
+    midiHeldRef.current.delete(voiceId);
     const c = ensureAudio();
     if (songT !== null && c) {
       const at =
         c.currentTime + Math.max(0, songT - (midiPlayerRef.current ? midiPlayerRef.current.getPos() : songT));
-      synthRef.current.scheduledOff("midi-" + midiNum, at, settingsRef.current.release);
+      synthRef.current.scheduledOff(voiceId, at, settingsRef.current.release);
     } else {
-      synthRef.current.noteOff("midi-" + midiNum, settingsRef.current.release);
+      synthRef.current.noteOff(voiceId, settingsRef.current.release);
     }
+    if (bg) return;
     const key = keyByMidi.get(midiNum);
     if (key) {
       const cur = midiUiIdsRef.current || new Set(midiActiveIds);
@@ -382,32 +396,46 @@ export default function PianoApp() {
     }
   };
 
-  const startMidi = (speed = midiSpeed, track = midiTrack, fromPos = midiPosRef.current) => {
+  const startMidi = (
+    speed = midiSpeed,
+    track = midiTrack,
+    fromPos = midiPosRef.current,
+    mix = midiMix
+  ) => {
     if (!midi) return;
-    const notes =
-      track === "all"
-        ? midi.tracks.flatMap((t) => t.notes)
-        : midi.tracks[Number(track)].notes;
-    if (!notes.length) return;
+    const leadIdx = track === "all" ? -1 : Number(track);
+    // Pistes jouées : toutes (tutti), la piste seule, ou la piste mise en
+    // avant accompagnée des autres en fond.
+    const played = midi.tracks
+      .map((t, i) => ({ notes: t.notes, bg: leadIdx !== -1 && i !== leadIdx }))
+      .filter((t) => !(t.bg && mix === "solo"));
+    if (!played.some((t) => !t.bg && t.notes.length)) return;
     const events = [];
     let maxT = 0;
-    for (const n of notes) {
-      events.push({ t: n.start, on: true, midi: n.midi, velocity: n.velocity });
-      events.push({ t: n.end, on: false, midi: n.midi });
-      if (n.end > maxT) maxT = n.end;
+    for (const t of played) {
+      for (const n of t.notes) {
+        events.push({ t: n.start, on: true, midi: n.midi, velocity: n.velocity, bg: t.bg });
+        events.push({ t: n.end, on: false, midi: n.midi, bg: t.bg });
+        if (n.end > maxT) maxT = n.end;
+      }
     }
     // au même instant, on coupe la note avant d'en rallumer une
     events.sort((a, b) => a.t - b.t || (a.on ? 1 : 0) - (b.on ? 1 : 0));
     // En tutti, la somme des pistes saturerait vite : on divise le gain par
     // la racine du nombre de pistes, le limiteur de sortie fait le reste.
+    // En mise en avant, la piste choisie garde son plein volume et
+    // l'accompagnement est atténué, divisé lui aussi selon son nombre de pistes.
     const gainScale =
       track === "all" && midi.tracks.length > 1
         ? 1 / Math.sqrt(midi.tracks.length)
         : 1;
+    const bgCount = played.filter((t) => t.bg).length;
+    const bgScale = bgCount ? BACKGROUND_GAIN / Math.sqrt(bgCount) : 0;
     ensureAudio();
     midiPlayerRef.current = createMidiPlayer(events, maxT, {
-      onNoteOn: (m, v, t) => handleMidiNoteOn(m, v, gainScale, t),
-      onNoteOff: handleMidiNoteOff,
+      onNoteOn: (m, v, t, ev) =>
+        handleMidiNoteOn(m, v, ev && ev.bg ? bgScale : gainScale, t, !!(ev && ev.bg)),
+      onNoteOff: (m, t, ev) => handleMidiNoteOff(m, t, !!(ev && ev.bg)),
       onEnd: () => {
         midiPlayerRef.current = null;
         midiPosRef.current = 0; // morceau terminé : une relecture repart du début
@@ -506,6 +534,14 @@ export default function PianoApp() {
     if (midiPlaying) {
       pauseMidi();
       startMidi(midiSpeed, track);
+    }
+  };
+
+  const changeMidiMix = (mix) => {
+    setMidiMix(mix);
+    if (midiPlaying) {
+      pauseMidi();
+      startMidi(midiSpeed, midiTrack, midiPosRef.current, mix);
     }
   };
 
@@ -858,6 +894,33 @@ export default function PianoApp() {
                     </select>
                   </span>
                 </label>
+                {midiTrack !== "all" && midi.tracks.length > 1 && (
+                  <div className="field">
+                    <span className="field-label" id="mix-label">Autres pistes</span>
+                    <div className="segmented segmented-sm" role="radiogroup" aria-labelledby="mix-label">
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={midiMix === "lead"}
+                        className={midiMix === "lead" ? "is-selected" : ""}
+                        onClick={() => changeMidiMix("lead")}
+                        title="La piste choisie domine, les autres restent audibles plus doucement"
+                      >
+                        En fond
+                      </button>
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={midiMix === "solo"}
+                        className={midiMix === "solo" ? "is-selected" : ""}
+                        onClick={() => changeMidiMix("solo")}
+                        title="Seule la piste choisie est jouée"
+                      >
+                        Coupées
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className="field">
                   <span className="field-label" id="speed-label">Vitesse</span>
                   <div className="segmented segmented-sm" role="radiogroup" aria-labelledby="speed-label">

@@ -101,7 +101,10 @@ export function Lyrics({ lyrics, playing, getPos, progress, onSeek }) {
     const el = listRef.current.querySelector(".lyr-line.is-current");
     if (!el) return;
     const box = listRef.current;
-    const top = el.offsetTop - box.clientHeight / 2 + el.clientHeight / 2;
+    // Position de la ligne dans la zone qui défile (offsetTop serait relatif
+    // à la page, d'où un saut tout en bas) ; on la centre verticalement.
+    const offset = el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+    const top = Math.max(0, offset - box.clientHeight / 2 + el.clientHeight / 2);
     box.scrollTo({ top, behavior: playing ? "smooth" : "auto" });
   }, [cursor.li, view]);
 

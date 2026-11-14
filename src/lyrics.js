@@ -66,6 +66,8 @@ export function parseLyricsText(text) {
   return sections.filter((s) => s.lines.length);
 }
 
+const isSolo = (normalized) => /\bsolo\b/.test(normalized);
+
 // Section qui s'applique à une piste : nom exact > pupitre > [Tous].
 export function pickSection(sections, trackName) {
   const n = normalizeName(trackName);
@@ -82,8 +84,9 @@ export function pickSection(sections, trackName) {
       // Nom exact, ou même pupitre et même chœur écrit autrement
       // ([S II] pour la piste « SII », [T1] pour « T I »).
       if ((hn && hn === n) || (hVoice && hVoice === voice && hChoir && hChoir === choir)) rank = 3;
-      // Pupitre sans numéro ([Ténor], [T]) : vaut pour toutes ses pistes.
-      else if (hVoice && hVoice === voice && !hChoir) rank = 2;
+      // Pupitre sans numéro ([Ténor], [T]) : vaut pour toutes ses pistes,
+      // sans confondre le chœur et le soliste ([Soprano] / [Soprano Solo]).
+      else if (hVoice && hVoice === voice && !hChoir && isSolo(hn) === isSolo(n)) rank = 2;
       else if (ALL_NAMES.has(name.trim().toLowerCase()) || ALL_NAMES.has(hn)) rank = 1;
       if (rank > bestRank) {
         best = s;

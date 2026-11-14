@@ -25,7 +25,7 @@ in ex-cel-sis, in ex-cel-sis.
 Sanc-tus, Sanc-tus, Sanc-tus_______ Do_-mi-nus De-us Sa-ba-oth,
 Do-mi-nus De-us Sa-ba-oth.
 Ple-ni sunt cœ-li et ter-ra,
-ple-ni sunt cœ-li et ter-ra glo-ri-a tu-a.
+ple-ni sunt cœ-li~et ter-ra glo-ri-a_ tu-a.
 in_ ex_-cel___________________________-sis, in ex-cel-sis,
 o-san_____-na in ex-cel___________-sis,
 o___-san-na, o___-san-na,
@@ -46,7 +46,7 @@ in ex-cel-sis, in ex-cel-sis.
 
 [Ténor I]
 Sanc-tus, Sanc-tus, Sanc-tus_____ Do_-mi-nus De-us Sa-ba-oth,
-Do-mi-nus De-us Sa-ba__-oth.
+Domi-nus De_-us Sa-ba__-oth.
 Ple-ni sunt cœ-li et ter-ra,
 ple-ni sunt cœ-li et ter-ra glo-ri-a tu___-a.
 in_ ex_-cel______________________________-sis, in ex-cel-sis,
@@ -107,41 +107,38 @@ o-san-na in ex-cel-sis,
 o-san_______-na in ex_____-cel_-sis,
 in___ ex_-cel___-sis, o-san-na in_ ex_-cel_______________________________-sis,
 in_ ex_-cel_______________________-sis, o-san-na,
-o-san__-na___ in ex___-cel-sis,
-o-san-na in ex-cel-sis,
-o-san-na in ex-cel-sis,_
+o-san__-na___ in ex____-celsis,
+osan-na~in ex-cel-sis, o-san-na in__ ex-cel-sis,_
 o-san_______-na,_ o-san_____-na,
 o-san___-na in____ ex_-cel_______-sis,
 in_ ex_-cel______________________________________-sis, o___-san________________________-na,
-o-san-na in ex-cel-sis,
-in ex-cel-sis, o-san-na in ex-cel_-sis,
+osan-na in ex-cel-sis,
+in ex_-cel-sis, o-san-na in ex-cel_-sis,
 o-san-na in ex-cel-sis,
 in ex-cel-sis, in ex-cel-sis,
 in ex-cel-sis.
 
 [Alto II]
-Sanc-tus, Sanc-tus, Sanc-tus,
-Do-mi-nus De-us Sa-ba-oth,
+Sanctus,~Sanc-tus,__ Sanc-tus, Do-mi-nus De-us Sa-ba-oth,
 Do-mi-nus, Do-mi-nus De-us Sa-ba-oth.
 Ple-ni, ple-ni sunt cœ-li et ter-ra,
 ter-ra glo-ri__-a tu-a.__-o-san-na in ex-cel-sis,
 o-san________-na, o-san_______-na,
-o-san-na, o-san-na,
-o-san-na, o-san__________________-na,__
-o-san-na in ex-cel-sis,
+osanna, o-san-na, o_-san_-na,
+o-san__________________-na,__ o-san-na in ex-cel-sis,
 o-san_________-na, o-san-na,
-o-san-na in ex-cel-sis,
-o-san-na, o-san-na,
-o-san-na, o-san-na in ex-cel_________________________-sis,__
+o-san-na in~ex-cel-sis,
+o-san-na, osanna, o-san-na,
+o_-sanna in_ ex_-cel__________________________-sis,__
 in ex-cel-sis, o___-san-na,
 o-san-na, o-san____-na,
 o-san_-na, o-san_-na in____ ex-cel-sis,
 o-san_____-na,__ o_-san_______-na,
 o-san__-na, o-san-na in ex-cel-sis,
-in ex-cel-sis, o-san-na in ex-cel-sis,
+in ex-cel-sis, o-san-na in~ex-cel-sis,
 o-san-na in ex-cel-sis,
 in ex-cel-sis, in ex-cel-sis,
-in ex-celsis.
+in ex-cel-sis.
 
 [Ténor II]
 Sanc-tus, Sanc-tus, Sanc-tus,
@@ -152,18 +149,16 @@ ter-ra glo-ri_-a tu-a.
 o-san-na in ex-cel-sis,
 o-san________-na, o-san_______-na,
 o-san-na, o-san-na,
-o-san-na in ex_-cel__________-sis,
-o-san-na, o-san-na,___
-o-san_-na,_ o-san-na,
-o-san-na, o-san__-na,
-o-san_-na in ex-cel-sis,
-o-san-na, o-san-na,-o-san-na,
+o-san-na in ex_-cel__________-sis,~o-san-na,
+o_-san-na,___ o-san_-na,_
 o-san-na, o-san-na,
-o-san-na in ex-cel-sis,
-o-san-na in ex-cel-sis,
-o-san-na in ex-cel-sis,_
-o____-san____-na, o-san-na,
-o-san-na-in_ ex__-cel___________-sis,
+o-san__-na, o-san_-na in ex-cel-sis,~o-san-na,
+o-san-na,-o-san-na,
+o-san-na, o-san-na,
+o-san_-na~in ex-cel-sis,
+o-san-na in_ ex-cel-sis,
+osanna in ex-cel_-sis,__ o____-san____-na,
+o-san-na, o-san-na-in_ ex__-cel___________-sis,
 in_ ex_-cel_______-sis,__ o-san__-na,
 o_________-san-na, o-san-na,
 o-san-na in ex-cel-sis,
@@ -181,19 +176,16 @@ ter-ra_____ glo-ri-a_____ tu____________-a.
 o___-san______-na, o-san-na,
 o-san-na_ in ex-cel_____________-sis,
 o-san-na, o-san-na,
-o____-san-na_ in_ ex_-cel______________________-sis,
-o-san-na in ex_-cel_-sis,__
+o____-san-na_ in_ ex_-cel______________________-sis,~o-san-na in_ ex_-cel_-sis,__
 in___ ex_-cel_______-sis,___ o-san-na,
-o_-san_-na in_ ex-cel___________-sis,
-o-san-na, o-san-na,
-o-san-na, o-san-na in ex-cel-sis,
-in ex-cel_______________________________-sis, o-san-na,
+o_-san_-na in_ ex-cel___________-sis,~o-sanna,
+o-san-na, o-sanna, osan-na in ex__-cel_-sis,
+in_ ex-cel_______________________________-sis, o-san-na,
 o-san-na in ex_-cel____________-sis,_-o-san-na in ex-cel-sis,
 o-san_______-na in ex-cel-sis,__
 o-san-na in ex-cel-sis,
 o_____-san-na in ex-cel-sis,
-o-san-na, o-san-na,
-o-san-na,-o-san-na in ex-cel-sis,
+o-sanna, o-san-na, o-san_-na,-o-san-na in ex-cel-sis,
 in ex-cel-sis, o-san-na in ex-cel_-sis,
 o-san-na in ex-cel-sis,
 in ex-cel-sis, in ex-cel-sis,

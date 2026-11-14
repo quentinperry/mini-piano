@@ -10,7 +10,7 @@ import { listBuiltInSongs, fetchBuiltInSong, fetchBuiltInLyrics } from "./songs"
 import { detectVoice, findVoiceTrack } from "./voices";
 import { buildLyrics, lyricsSectionNames } from "./lyrics";
 import { Piano } from "./Piano";
-import { Lyrics } from "./Lyrics";
+import { Lyrics } from "./LyricsPanel";
 
 // Tessitures chorales : base midi de chaque pupitre (mi = Do4).
 // Ténor par défaut.

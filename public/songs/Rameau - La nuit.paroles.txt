@@ -1,0 +1,102 @@
+# Rameau (arr. É. Sciortino) — Hymne à la nuit
+# Paroles extraites de la partition et alignées sur « Rameau - La nuit.mid » :
+# le MIDI joue la levée puis trois passages : 1er couplet, 2e couplet, reprise du 1er couplet.
+# Une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus,
+# « ~ » = syllabes chantées sur une même note.
+
+[Soprano]
+Ô Nuit!
+Viens ap-por-ter sur la ter-re le calme en-chan-te-ment
+de ton mys-tè_-re.
+l'om-bre qui t'es-corte est si dou-ce,
+si doux est le con-cert de tes voix chan-tant l'es-pé-ran-ce,
+si grand est ton pou-voir,
+trans-for-mant tout en_ rêve heu-reux!
+(bouche~fermée)_____________ Ô
+
+Nuit!
+Ô laisse en-core à la ter-re le calme en-chan-te-ment
+de ton mys-tè_-re.
+L'om-bre qui t'es-corte est si dou-ce,
+Est-il u-ne beau-té aus-si bel_-le que le rê-ve?
+Est-il de vé-ri-té plus dou-ce que l'es-pé-ran_-ce!
+(bouche~fermée)_____________ Ô
+
+Nuit!
+Viens ap-por-ter sur la ter-re le calme en-chan-te-ment
+de ton mys-tè_-re.
+l'om-bre qui t'es-corte est si dou-ce,
+si doux est le con-cert de tes voix chan-tant l'es-pé-ran-ce,
+si grand est ton pou-voir,
+trans-for-mant tout en_ rêve heu-reux!
+(bouche~fermée)_____________
+
+[Alto]
+Ô Nuit!
+Viens ap-por-ter sur la ter-re le calme en-chan-te-ment
+de ton mys-tè_-re.
+l'om-bre qui t'es-corte est si dou-ce,
+si doux est le con-cert de tes voix chan-tant l'es-pé-ran-ce,
+si grand est ton pou-voir,
+trans_-for_-mant tout en_ rêve heu-reux!
+(bouche~fermée)____________ Ô
+
+Nuit!
+Ô laisse~encore à la ter-re~le~calme enchantement de ton mys-tè_-re.
+L'om-bre~qui t'es-corte est si dou-ce,~Est-il~une~beauté~aussi~bel-le que~le rê-ve?~Estil de~véri-té
+plus_ dou_-ce que~l'es-pé-ran_-ce!____________
+(bouche~fermée)~Ô
+
+Nuit!
+Viens ap-por-ter sur la ter-re le calme en-chan-te-ment
+de ton mys-tè_-re.
+l'om-bre qui t'es-corte est si dou-ce,
+si doux est le con-cert de tes voix chan-tant l'espé-ran-ce,
+si grand est ton pou-voir,
+trans_-for_-mant tout_ en_ rêve heu-reux!
+(bouche~fermée)____________
+
+[Ténor]
+Ô Nuit!
+Viens ap-por-ter sur la ter-re le calme en-chan-te-ment
+de ton mys-tè_-re.
+l'om-bre qui t'es-corte est si dou-ce,
+si doux est le con_-cert de tes voix chan-tant l'es-pé-ran-ce,
+si grand est ton pou-voir,
+trans-for-mant tout en rêve heu-reux!
+(bouche~fermée)________ Ô
+
+Nuit!
+Ô~laisse~encore à la~ter-re le~calme en-chan-te-ment de ton mystè_-re.
+L'om-bre~qui~t'escorte~est~si~douce,~Est-il u-ne beau-té aus-si~belle~que le rê-ve?
+Est-il~de~vé-ri-té plus dou-ce que~l'es-pé-ran-ce!
+(bouche~fermée)________ Ô
+
+Nuit!
+Viens ap-por-ter sur la ter-re le calme en-chan-te-ment
+de ton mys-tè_-re.
+l'om-bre qui t'es-corte est si dou-ce,
+si doux est le con_-cert de tes voix chan-tant~l'es-pé-ran-ce,
+si grand est ton pou-voir,
+trans-for-mant tout en_ rêve heu-reux!
+(bouche~fermée)________
+
+[Basse]
+Ô Nuit!
+Viens ap-por-ter sur la ter-re le calme en-chan-te-ment_
+de ton mys-tè_-re._______________
+si_ grand est ton pou-voir,
+trans-for-mant tout en rêve heu-reux!
+(bouche~fermée)____________ Ô
+
+Nuit!
+Ô laisse~en-core à la~ter-re~le calme~en-chan-te-ment de ton mystè_-re.____________
+Est-il de vé-ri-té plus douce que l'es-pé-ran-ce!
+(bouche~fermée)____________ Ô
+
+Nuit!
+Viens ap-por-ter sur la ter-re le calme en-chan-te-ment_
+de ton mys-tè_-re.______________
+si_ grand est ton pou-voir,
+trans-for-mant tout_ en rêve heu-reux!
+(bouche~fermée)____________

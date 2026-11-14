@@ -1,0 +1,142 @@
+# Mozart, Messe en ut mineur K. 427 — Qui tollis
+# Paroles extraites de la partition (CPDL, Philip Legge) et alignées sur 04quitollis.mid :
+# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus.
+
+[Soprano I]
+Qui tol_-lis pec-ca-ta mun-di,
+qui tol-lis pec-ca-ta,
+qui tol-lis, qui tol-lis pec-ca__-ta mun-di,
+mi-se-re_-re, mi-se-re-re no_-bis.
+Qui tol-lis_ pec-ca-ta mun-di,
+qui tol-lis, qui tol-lis,
+qui tol-lis pec-ca-ta mun_-di,
+su-sci-pe, su-sci-pe,
+su-sci-pe de-pre-ca___-ti-o-nem no-stram.
+Qui se-des_ ad dex-te-ram Pa-tris,
+qui se-des ad dex-te-ram Pa-tris,
+qui se-des, qui se-des,
+qui se_-des ad dex-te-ram Pa-tris,
+mi-se-re-re, mi-se-re-re no-bis,
+mi-se-re-re, mi-se-re-re,
+mi-se-re-re no______-bis,
+mi-se
+
+[Alto I]
+Qui tol-lis pec-ca-ta mun_-di,
+qui tol-lis, qui tol-lis,
+qui tol-lis, qui tol___-lis pec-ca-ta mun-di,
+mi-se-re-re no_-bis.
+Qui tol-lis pec-ca-ta mun_-di,
+qui tol-lis, qui tol-lis pec-ca-ta,
+qui tol-lis pec-ca-ta mun-di,
+su-sci-pe de-pre-ca-ti-o-nem no__-stram.
+Qui se-des ad dex-te-ram Pa-tris,
+qui se-des ad dex-te-ram Pa_-tris,
+qui se-des, qui se-des ad dex-te-ram,
+qui se_-des ad dex-te-ram Pa_-tris,
+mi-se-re-re, mi-se-re-re no-bis,
+mi-se-re-re, mi-se-re-re,
+mi_-se-re___-re no____-bis,
+mi_-se_
+
+[Ténor I]
+Qui tol_-lis pec-ca-ta_ mun-di,
+qui_ tol-lis pec-ca-ta,
+qui tol-lis, qui tol-lis,
+qui tol-lis pec-ca-ta mun_-di,
+mi-se-re-re no_-bis.
+Qui tol_-lis pec-ca-ta mun_-di,
+qui tol-lis, qui tol-lis pec-ca-ta mun_-di,
+pec-ca-ta mun_-di, su-sci-pe de-pre-ca-ti-o-nem
+no___-stram.
+Qui se_-des ad dex-te-ram_ Pa_-tris,
+qui se-des ad dex-te-ram Pa_-tris,
+qui se-des, qui se-des,
+qui se_-des ad dex-te-ram Pa-tris,
+mi-se-re-re, mi-se-re-re no-bis,
+mi_-se-re-re, mi_-se-re-re,
+mi-se-re____-re__ no_-bis,
+mi-se
+
+[Basse I]
+Qui tol_-lis pec-ca-ta mun-di,
+qui tol-lis, qui tol-lis pec-ca-ta mun-di,
+pec-ca_-ta mun-di, mi-se-re-re no_-bis.
+Qui tol_-lis pec-ca-ta mun_-di,
+qui tol-lis pec-ca-ta mun-di,
+pec-ca__-ta mun-di, su-sci-pe de-pre-ca-ti-o-nem
+no-stram.
+Qui se_-des ad dex-te-ram Pa_-tris,
+qui se-des ad dex-te-ram Pa-tris,
+qui se-des ad dex-te-ram Pa-tris,
+qui se-des ad dex-te-ram Pa-tris,
+mi-se-re-re, mi-se-re-re no-bis,
+mi-se-re-re, mi-se-re-re,
+mi-se-re-re no-bis,
+mi-se______
+
+[Soprano II]
+Qui tol-lis_ pec-ca-ta mun-di,
+qui tol-lis, qui tol-lis pec-ca_-ta,
+pec-ca-ta mun_-di, mi-se-re-re,
+mi-se-re-re no_-bis.
+Qui tol-lis pec-ca-ta,
+qui tol-lis, qui tol-lis,
+qui tol-lis pec-ca-ta mun_-di,
+su-sci-pe, su-sci-pe,
+su-sci-pe de-pre-ca-ti-o-nem no-stram.
+Qui se-des, qui se-des ad dex-te-ram Pa_-tris,
+qui se-des, qui se-des,
+qui se-des ad dex-te-ram Pa_-tris,
+mi-se-re-re, mi-se-re-re no-bis,
+mi-se-re-re, mi-se-re-re,
+mi-se-re-re no______-bis,
+mi-se
+
+[Alto II]
+Qui tol-lis pec-ca-ta mun_-di,
+qui tol-lis, qui tol-lis pec-ca-ta,
+pec-ca-ta mun_-di, mi-se-re-re no-bis.
+Qui tol_-lis, qui tol-lis,
+qui tol-lis, qui tol-lis pec-ca-ta mun__-di,
+su-sci-pe, su-sci-pe,
+su-sci-pe de-pre-ca-ti-o-nem no__-stram.
+Qui se____-des ad dex-te-ram Pa-tris,
+qui se-des, qui se-des,
+qui se-des, qui se-des ad dex-te-ram Pa_-tris,
+mi-se-re-re, mi-se-re-re no-bis,
+mi-se-re-re, mi-se-re-re,
+mi-se-re-re no_____-bis,
+mi-se
+
+[Ténor II]
+Qui tol_-lis pec-ca-ta_ mun__-di,
+qui tol-lis, qui tol-lis pec-ca-ta mun-di,
+pec-ca-ta mun_-di, mi-se-re-re no-bis.
+Qui tol-lis pec-ca-ta,
+qui tol-lis, qui tol-lis pec-ca-ta,
+qui tol_-lis pec-ca-ta mun-di,
+su-sci-pe, su-sci-pe,
+su_-sci-pe de-pre-ca-ti-o-nem no___-stram.
+Qui se-des, qui se-des ad dex-te-ram Pa_-tris,
+qui se-des, qui se-des,
+qui se-des, qui se-des ad dex-te-ram Pa_-tris,
+mi-se-re-re, mi-se-re-re no-bis,
+mi-se-re-re, mi-se-re-re,
+mi-se-re-re no_-bis,____
+mi-se
+
+[Basse II]
+Qui tol_-lis pec-ca-ta mun_-di,
+qui tol-lis pec-ca-ta mun-di,
+pec-ca_-ta mun-di, mi-se-re-re no-bis.
+Qui tol-lis, qui tol-lis pec-ca-ta mun-di,
+pec-ca__-ta mun_-di, su-sci-pe,
+su-sci-pe, su-sci-pe de-pre-ca-ti-o-nem no-stram.
+Qui se-des, qui se-des ad dex-te-ram Pa-tris,
+qui se-des ad dex-te-ram Pa-tris,
+qui se-des ad dex-te-ram Pa-tris,
+mi-se-re-re, mi-se-re-re no-bis,
+mi-se-re-re, mi-se-re-re,
+mi-se-re-re no-bis,____
+mi-se

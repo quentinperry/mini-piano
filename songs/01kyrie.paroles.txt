@@ -1,0 +1,106 @@
+# Mozart, Messe en ut mineur K. 427 — Kyrie
+# Paroles extraites de la partition (CPDL, Philip Legge) et alignées sur 01kyrie.mid :
+# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus.
+
+[Soprano]
+Ky-ri-e e-lei_-son,
+e_-lei__-son.
+Ky-ri-e e-lei_-son,
+e-lei__-son.
+Ky-ri-e_ e_-lei___-son,
+e-lei_-son, e-lei____-son,
+e-lei-son, e-lei-son,
+e-lei_-son, e-lei____-son,
+e-lei_-son, e-lei_-son,
+e-lei_-son, e-lei-son,
+e-lei_-son.
+Ky_-ri_-e e___-lei_________-son.
+Ky-ri-e_ e-lei___-son,
+e-lei_-son,____ e_-lei-son,_
+e_-lei____-son.
+Chris___-te, Chris-te,_ Chri-ste e-lei-son,
+e-lei-son, e-lei_-son.
+e__-lei_-son,_ e__-lei_-son,_
+Ky-ri-e e-lei-son,
+Ky-ri-e e-lei-son,
+e-lei-son, e-lei_-son,
+e-lei_-son, e-lei_-son,
+e-lei_-son, e-lei-son,
+e-lei__-son, Ky_-ri_-e_ e_-lei___-son,
+Ky-ri-e_ e-lei___-son,
+e-lei_-son,____ e_-lei-son,_
+e_-lei_-son, e-lei_-son,
+e-le-i-son.
+
+[Alto]
+Ky-ri-e e-lei_-son,
+e-lei__-son.
+Ky-ri-e e-lei_-son,
+e-lei__-son, e-lei___-son.
+Ky-ri-e, Ky-ri-e e-lei-son.
+Ky-ri-e e-lei_-son.
+Ky_-ri_-e e___-lei_________-son.
+Ky-ri-e e-lei___-son.
+Chris___-te, Chris-te Chri_-ste e-lei-son,
+e-lei-son, e-lei_-son.
+Chri-ste e-lei-son, e-lei____-son,
+e-lei-son, Ky-ri-e,
+Ky-ri-e, Ky-ri-e e-lei-son.
+Ky-ri-e e-lei-son,
+e-lei-son, Ky_-ri_-e_ e_-lei-son,
+Ky-ri-e e_-lei-son,
+Ky-ri-e e-lei__-son,
+e-le-i-son.
+
+[Ténor]
+Ky-ri-e e_-lei__-son.
+Ky-ri-e e-lei_-son,
+e-lei__-son, e-lei-son,
+e-lei-son, e-lei-son.
+Ky-ri-e e-lei___-son.
+Ky-ri-e e-lei-son,
+e-lei___-son.
+e-lei-son, Chris_-te e-lei-son,
+e-lei-son, e-lei_-son.
+e-lei-son, Ky-ri-e e-lei_-son,
+Ky-ri-e e-lei_-son,
+e-lei__-son, e-lei-son,
+e-lei-son, e-lei-son,
+e-lei-son, e-lei_____________-son,
+Ky-ri-e e_-lei_-son,
+Ky-ri-e e-lei-son,
+e-le-i-son.
+
+[Basse]
+Ky-ri-e e-lei__-son.
+Ky_-ri-e_ e_-lei___-son,
+e-lei-son, e-lei____-son,
+e-lei-son, e-lei-son,
+e-lei-son, e-lei-son,
+e-lei-son, e-lei-son,
+e-lei-son.
+Ky-ri-e e_-lei-son.
+Ky-ri-e e-lei-son,
+e-le-i-son.
+e-lei_-son, Chris_-te e-lei-son,
+e-lei-son, e-lei-son.
+e-lei_-son, Ky_-ri-e_ e-lei___-son,
+e-lei_-son, e-lei____-son,
+e-lei-son, e-lei-son,
+e-lei-son, e-lei-son,
+e-lei-son, e-lei-son,
+e-lei-son, e-lei_-son,
+Ky-ri-e e-lei-son,
+Ky-ri-e e-lei-son,
+Ky-ri-e e-lei__-son,
+e-le-i-son.
+
+[Soprano Solo]
+Chris___-te e___-lei___________-son, e-lei_-son,
+Chris-te, Chris_-te_ e_-lei___________-son,
+e-lei______________-son, e-lei-son,
+e-lei-son, e-lei___-son,
+Chri-ste, Chri_-ste e-lei__-son,
+Chri-ste,__ Chri___-ste e-lei___-son,
+e___-lei-son,_ e___-lei-son,_
+e__-lei______________-son, Chri-ste e-lei__________________________________________________________________________________-son.

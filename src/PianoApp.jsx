@@ -1,4 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  PlayIcon, PauseIcon, Back10Icon, Fwd10Icon, ExpandIcon, ShrinkIcon,
+  FileIcon, NoteIcon, VolumeIcon, SustainIcon, MinusIcon, PlusIcon, Logo,
+} from "./icons";
 import { Synth, ensureAudio, audioState, suspendAudio, onAudioStateChange } from "./audio";
 import { buildKeys, buildKeyMap, midiToFreq } from "./notes";
 import { parseMidi, createMidiPlayer } from "./midi";
@@ -35,16 +39,21 @@ function useContainerSize() {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Largeur : celle réellement rendue. Hauteur : celle de la fenêtre, car
+    // le conteneur grandit avec son contenu et fausserait le rapport.
     const measure = () =>
-      setSize({ width: el.clientWidth, height: el.clientHeight });
+      setSize({ width: el.clientWidth, height: window.innerHeight });
     measure();
-    if (typeof ResizeObserver === "function") {
-      const ro = new ResizeObserver(measure);
-      ro.observe(el);
-      return () => ro.disconnect();
-    }
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    let ro = null;
+    if (typeof ResizeObserver === "function") {
+      ro = new ResizeObserver(measure);
+      ro.observe(el);
+    }
+    return () => {
+      window.removeEventListener("resize", measure);
+      if (ro) ro.disconnect();
+    };
   }, []);
   return { ref, size };
 }
@@ -557,34 +566,123 @@ export default function PianoApp() {
     }
   };
 
+  const displayParts = lastNote ? lastNote.solfege.match(/^(.*?)(-?\d+)$/) : null;
+  const audioReady = audioStatus === "running";
+  const midiPos = midi ? Math.min(midiProgress, midi.duration) : 0;
+  const seekPct = midi && midi.duration > 0 ? (midiPos / midi.duration) * 100 : 0;
+  const currentPos = () =>
+    midiPlayerRef.current ? midiPlayerRef.current.getPos() : midiProgress;
+  const canResume = midi && midiProgress > 0.05 && midiProgress < midi.duration - 0.05;
+
   return (
     <div
       className={`piano-app ${isWide ? "layout-wide" : "layout-narrow"}`}
       ref={rootRef}
     >
-      <header className="piano-header">
-        <h1>Mini Piano</h1>
-        <p className="piano-sub">
-          Choisissez votre pupitre (soprano, alto, ténor par défaut, basse) puis jouez la note pour vous caler. En paysage, toute la tessiture s'affiche, aigus compris. Au premier chargement, appuyez deux fois sur une touche : la première autorise l'audio, la seconde joue.
-        </p>
+      {/* ---- Barre supérieure : identité, état du son, plein écran ---- */}
+      <header className="topbar">
+        <div className="brand">
+          <Logo size={30} />
+          <div className="brand-text">
+            <h1>Mini Piano</h1>
+            <span className="brand-tag">l'outil des choristes</span>
+          </div>
+        </div>
+        <div className="topbar-actions">
+          <button
+            type="button"
+            className={`audio-pill audio-${audioStatus}`}
+            role="status"
+            aria-live="polite"
+            onClick={() => {
+              ensureAudio();
+              setAudioStatus(audioState());
+            }}
+          >
+            <span className="audio-dot" aria-hidden="true" />
+            {audioReady ? "Son actif" : audioStatus === "idle" ? "Activer le son" : "Son en veille"}
+          </button>
+          {fsAvailable && (
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={toggleFullscreen}
+              aria-label={isFullscreen ? "Quitter le plein écran" : "Plein écran"}
+              title={isFullscreen ? "Quitter le plein écran" : "Plein écran"}
+            >
+              {isFullscreen ? <ShrinkIcon /> : <ExpandIcon />}
+            </button>
+          )}
+        </div>
       </header>
 
-      <div className={`audio-badge audio-${audioStatus}`} role="status">
-        {audioStatus === "running"
-          ? "Audio actif"
-          : audioStatus === "idle"
-            ? "Au début, appuyez deux fois sur une touche pour lancer le son"
-            : "Audio en veille : appuyez deux fois sur une touche pour lancer le son"}
-      </div>
+      {/* ---- Scène : note jouée + choix du pupitre et de l'octave ---- */}
+      <section className="stage">
+        <div className={`readout${lastNote ? "" : " is-empty"}`} aria-live="polite">
+          {displayParts ? (
+            <>
+              <span className="readout-note" key={lastNote.id}>
+                {displayParts[1]}
+                <sub>{displayParts[2]}</sub>
+              </span>
+              <span className="readout-meta">
+                <span>{lastNote.name}</span>
+                <span className="readout-sep" aria-hidden="true">·</span>
+                <span>{midiToFreq(lastNote.midi).toFixed(1)} Hz</span>
+              </span>
+            </>
+          ) : (
+            <span className="readout-hint">
+              {audioReady
+                ? "Touchez une touche pour entendre la note"
+                : "Touchez une touche pour activer le son, puis jouez"}
+            </span>
+          )}
+        </div>
 
-      <div className="piano-display">
-        <span className="piano-display-note">{lastNote ? lastNote.solfege : "·"}</span>
-        {lastNote && (
-          <span className="piano-display-freq">
-            {lastNote.name} · {midiToFreq(lastNote.midi).toFixed(1)} Hz
-          </span>
-        )}
-      </div>
+        <div className="range-controls">
+          <div className="segmented" role="radiogroup" aria-label="Pupitre">
+            {TESSITURES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="radio"
+                aria-checked={t.id === voiceId}
+                className={t.id === voiceId ? "is-selected" : ""}
+                onClick={() => chooseVoice(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="octave">
+            <button
+              type="button"
+              className="step-btn"
+              onClick={() => shiftOctave(-1)}
+              disabled={octave <= -2}
+              aria-label="Octave en dessous"
+            >
+              <MinusIcon size={18} />
+            </button>
+            <div className="octave-info">
+              <span className="octave-label">
+                Octave {octave === 0 ? "" : octave > 0 ? `+${octave}` : octave}
+              </span>
+              <span className="octave-range">{rangeText}</span>
+            </div>
+            <button
+              type="button"
+              className="step-btn"
+              onClick={() => shiftOctave(1)}
+              disabled={octave >= 2}
+              aria-label="Octave au-dessus"
+            >
+              <PlusIcon size={18} />
+            </button>
+          </div>
+        </div>
+      </section>
 
       <Piano
         keys={keys}
@@ -593,77 +691,87 @@ export default function PianoApp() {
         onNoteOff={handlePointerOff}
       />
 
-      <div className="piano-controls">
-        <div className="control-group">
-          <span className="control-label">Tessiture</span>
-          <div className="voice-btns">
-            {TESSITURES.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className={t.id === voiceId ? "is-selected" : ""}
-                onClick={() => chooseVoice(t.id)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <span className="piano-range">{rangeText}</span>
-        </div>
+      <p className="kbd-hint">
+        Clavier d'ordinateur : rangée <kbd>Q</kbd>…<kbd>B</kbd> pour les blanches,
+        rangée du dessus pour les noires.
+      </p>
 
-        {fsAvailable && (
-          <div className="control-group">
-            <span className="control-label">Affichage</span>
-            <div className="voice-btns">
-              <button type="button" onClick={toggleFullscreen}>
-                {isFullscreen ? "Quitter plein écran" : "Plein écran"}
-              </button>
+      {/* ---- Panneaux : son et lecture MIDI ---- */}
+      <div className="panels">
+        <section className="panel panel-sound" aria-labelledby="sound-title">
+          <h2 id="sound-title" className="panel-title">Son</h2>
+          <label className="slider">
+            <span className="slider-head">
+              <VolumeIcon size={18} />
+              <span className="slider-name">Volume</span>
+              <span className="slider-value">{Math.round(volume * 100)} %</span>
+            </span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              style={{ "--fill": `${volume * 100}%` }}
+              onChange={(e) => setVolume(Number(e.target.value))}
+            />
+          </label>
+          <label className="slider">
+            <span className="slider-head">
+              <SustainIcon size={18} />
+              <span className="slider-name">Résonance</span>
+              <span className="slider-value">{release.toFixed(2).replace(".", ",")} s</span>
+            </span>
+            <input
+              type="range"
+              min="0.05"
+              max="1.5"
+              step="0.05"
+              value={release}
+              style={{ "--fill": `${((release - 0.05) / 1.45) * 100}%` }}
+              onChange={(e) => setRelease(Number(e.target.value))}
+            />
+          </label>
+        </section>
+
+        <section className="panel panel-midi" aria-labelledby="midi-title">
+          <h2 id="midi-title" className="panel-title">S'entraîner sur un morceau</h2>
+
+          <div className="source-row">
+            <div className="select-wrap">
+              <NoteIcon size={18} />
+              {songs !== null && songs.length > 0 ? (
+                <select
+                  value={selectedSong}
+                  onChange={chooseBuiltInSong}
+                  aria-label="Morceaux intégrés"
+                >
+                  <option value="">Morceaux intégrés…</option>
+                  {songs.map((s) => (
+                    <option key={s.name} value={s.name}>
+                      {s.title}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <select
+                  onFocus={loadSongs}
+                  onClick={loadSongs}
+                  onPointerDown={loadSongs}
+                  disabled={songs !== null && songs.length === 0}
+                  aria-label="Morceaux intégrés"
+                >
+                  <option>
+                    {songs !== null && songs.length === 0
+                      ? "Morceaux indisponibles"
+                      : "Morceaux intégrés…"}
+                  </option>
+                </select>
+              )}
             </div>
-          </div>
-        )}
-
-        <div className="control-group">
-          <span className="control-label">Octave</span>
-          <div className="octave-btns">
-            <button type="button" onClick={() => shiftOctave(-1)} aria-label="Octave en dessous">
-              −
-            </button>
-            <span className="octave-value">{octave >= 0 ? `+${octave}` : octave}</span>
-            <button type="button" onClick={() => shiftOctave(1)} aria-label="Octave au-dessus">
-              +
-            </button>
-          </div>
-        </div>
-
-        <div className="control-group">
-          <span className="control-label">Volume</span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={volume}
-            onChange={(e) => setVolume(Number(e.target.value))}
-          />
-        </div>
-
-        <div className="control-group">
-          <span className="control-label">Sustain</span>
-          <input
-            type="range"
-            min="0.05"
-            max="1.5"
-            step="0.05"
-            value={release}
-            onChange={(e) => setRelease(Number(e.target.value))}
-          />
-        </div>
-
-        <div className="control-group">
-          <span className="control-label">Fichier MIDI</span>
-          <div className="voice-btns">
-            <label className="midi-btn">
-              Ouvrir un MIDI…
+            <label className="file-btn" title="Ouvrir un fichier MIDI">
+              <FileIcon size={18} />
+              <span>Fichier MIDI</span>
               <input
                 type="file"
                 accept=".mid,.midi,audio/midi"
@@ -672,104 +780,117 @@ export default function PianoApp() {
               />
             </label>
           </div>
-          {songs === null && (
-            <div className="voice-btns">
-              <select
-                onFocus={loadSongs}
-                onClick={loadSongs}
-                aria-label="Morceaux intégrés"
-              >
-                <option>Morceaux intégrés…</option>
-              </select>
-            </div>
+
+          {songLoading && (
+            <p className="midi-status">
+              <span className="spinner" aria-hidden="true" /> Chargement du morceau…
+            </p>
           )}
-          {songs !== null && songs.length > 0 && (
-            <div className="voice-btns">
-              <select
-                value={selectedSong}
-                onChange={chooseBuiltInSong}
-                aria-label="Morceaux intégrés"
-              >
-                <option value="">Morceaux intégrés…</option>
-                {songs.map((s) => (
-                  <option key={s.name} value={s.name}>
-                    {s.title}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {midiError && <p className="midi-status midi-error">{midiError}</p>}
+
+          {!midi && !songLoading && !midiError && (
+            <p className="midi-empty">
+              Choisissez un morceau puis votre pupitre : les touches s'illuminent en rythme.
+            </p>
           )}
-          {songLoading && <span className="midi-file">Chargement du morceau…</span>}
+
           {midi && (
-            <>
-              <span className="midi-file">
-                {midi.name} · {formatMidiTime(midi.duration)}
-              </span>
-              <div className="midi-seek">
-                <button
-                  type="button"
-                  className="midi-step"
-                  onClick={() => seekMidi((midiPlayerRef.current ? midiPlayerRef.current.getPos() : midiProgress) - 10)}
-                  aria-label="Reculer de 10 secondes"
-                >
-                  −10 s
-                </button>
-                <span className="midi-time">{formatMidiTime(Math.min(midiProgress, midi.duration))}</span>
+            <div className="player">
+              <div className="player-title">
+                <span className="player-name">{midi.name}</span>
+              </div>
+
+              <div className="seek">
                 <input
                   type="range"
                   min="0"
                   max={midi.duration}
                   step="0.1"
-                  value={Math.min(midiProgress, midi.duration)}
+                  value={midiPos}
+                  style={{ "--fill": `${seekPct}%` }}
                   onChange={(e) => seekMidi(Number(e.target.value))}
                   aria-label="Position dans le morceau"
                 />
-                <span className="midi-time">{formatMidiTime(midi.duration)}</span>
+                <div className="seek-times">
+                  <span>{formatMidiTime(midiPos)}</span>
+                  <span>{formatMidiTime(midi.duration)}</span>
+                </div>
+              </div>
+
+              <div className="transport">
                 <button
                   type="button"
-                  className="midi-step"
-                  onClick={() => seekMidi((midiPlayerRef.current ? midiPlayerRef.current.getPos() : midiProgress) + 10)}
+                  className="transport-btn"
+                  onClick={() => seekMidi(currentPos() - 10)}
+                  aria-label="Reculer de 10 secondes"
+                >
+                  <Back10Icon size={24} />
+                </button>
+                <button
+                  type="button"
+                  className={`play-btn${midiPlaying ? " is-playing" : ""}`}
+                  onClick={toggleMidi}
+                  aria-label={midiPlaying ? "Pause" : canResume ? "Reprendre" : "Lire"}
+                >
+                  {midiPlaying ? <PauseIcon size={26} /> : <PlayIcon size={26} />}
+                </button>
+                <button
+                  type="button"
+                  className="transport-btn"
+                  onClick={() => seekMidi(currentPos() + 10)}
                   aria-label="Avancer de 10 secondes"
                 >
-                  +10 s
+                  <Fwd10Icon size={24} />
                 </button>
               </div>
-              <div className="voice-btns midi-row">
-                <select value={midiTrack} onChange={changeMidiTrack} aria-label="Piste à jouer">
-                  <option value="all">Toutes les pistes</option>
-                  {midi.tracks.map((t, i) => (
-                    <option key={i} value={String(i)}>
-                      {t.name} ({t.notes.length})
-                    </option>
-                  ))}
-                </select>
-                <select value={midiSpeed} onChange={changeMidiSpeed} aria-label="Vitesse de lecture">
-                  {[0.5, 0.75, 1, 1.25, 1.5].map((s) => (
-                    <option key={s} value={String(s)}>
-                      ×{s}
-                    </option>
-                  ))}
-                </select>
-                <button type="button" onClick={toggleMidi}>
-                  {midiPlaying
-                    ? "Pause"
-                    : midiProgress > 0.05 && midiProgress < midi.duration - 0.05
-                      ? "Reprendre"
-                      : "Lire"}
-                </button>
-                <label className="midi-pause-opt">
-                  <input
-                    type="checkbox"
-                    checked={pauseOnHidden}
-                    onChange={(e) => setPauseOnHidden(e.target.checked)}
-                  />
-                  Pause en arrière-plan
+
+              <div className="player-options">
+                <label className="field">
+                  <span className="field-label">Piste</span>
+                  <span className="select-wrap select-sm">
+                    <select value={midiTrack} onChange={changeMidiTrack}>
+                      <option value="all">Toutes les pistes</option>
+                      {midi.tracks.map((t, i) => (
+                        <option key={i} value={String(i)}>
+                          {t.name} ({t.notes.length})
+                        </option>
+                      ))}
+                    </select>
+                  </span>
                 </label>
+                <div className="field">
+                  <span className="field-label" id="speed-label">Vitesse</span>
+                  <div className="segmented segmented-sm" role="radiogroup" aria-labelledby="speed-label">
+                    {[0.5, 0.75, 1, 1.25, 1.5].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        role="radio"
+                        aria-checked={midiSpeed === s}
+                        className={midiSpeed === s ? "is-selected" : ""}
+                        onClick={() => changeMidiSpeed({ target: { value: s } })}
+                      >
+                        ×{String(s).replace(".", ",")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </>
+
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={pauseOnHidden}
+                  onChange={(e) => setPauseOnHidden(e.target.checked)}
+                />
+                <span className="toggle-track" aria-hidden="true">
+                  <span className="toggle-thumb" />
+                </span>
+                <span>Mettre en pause quand l'écran se verrouille</span>
+              </label>
+            </div>
           )}
-          {midiError && <span className="midi-file midi-error">{midiError}</span>}
-        </div>
+        </section>
       </div>
     </div>
   );

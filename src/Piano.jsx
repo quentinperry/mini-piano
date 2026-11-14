@@ -26,12 +26,13 @@ export function Piano({ keys, activeIds, onNoteOn, onNoteOff }) {
 
   return (
     <div className="piano">
+      <div className="piano-felt" aria-hidden="true" />
       <div className="piano-keys" ref={keysRef}>
         {whites.map((k) => (
           <button
             key={k.id}
             type="button"
-            className={`white-key${activeIds.has(k.id) ? " is-active" : ""}`}
+            className={`white-key${k.midi % 12 === 0 ? " is-c" : ""}${activeIds.has(k.id) ? " is-active" : ""}`}
             onPointerDown={(e) => {
               e.preventDefault();
               onNoteOn(k, "pointer");
@@ -42,7 +43,10 @@ export function Piano({ keys, activeIds, onNoteOn, onNoteOff }) {
             onPointerLeave={() => onNoteOff(k.id, "pointer")}
             aria-label={`${k.solfege} (${k.name})`}
           >
-            <span className="key-note">{k.solfege}</span>
+            <span className="key-note">
+              {k.solfege.replace(/-?\d+$/, "")}
+              {k.midi % 12 === 0 && <sub>{Math.floor(k.midi / 12) - 1}</sub>}
+            </span>
             {k.keyLabel && <span className="key-bind">{k.keyLabel}</span>}
           </button>
         ))}

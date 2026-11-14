@@ -10,7 +10,7 @@ const SONGS_API_URL =
   "https://api.github.com/repos/quentinperry/mini-piano/contents/public/songs?ref=main";
 const SONGS_RAW_BASE =
   "https://raw.githubusercontent.com/quentinperry/mini-piano/main/public/songs/";
-const SONGS_CACHE_KEY = "mini-piano-songs-v1";
+const SONGS_CACHE_KEY = "mini-piano-songs-v2";
 
 // Libellé lisible à partir du nom de fichier : « 01kyrie.mid » s'affichera
 // « 01 Kyrie ». Celui qui dépose les fichiers garde la main : espaces,
@@ -50,9 +50,19 @@ export async function listBuiltInSongs(onUpdate) {
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
     const entries = await res.json();
+    const files = new Set(entries.filter((e) => e.type === "file").map((e) => e.name));
+    // Paroles : fichier texte de même nom, « 01kyrie.paroles.txt » (ou « 01kyrie.txt »).
+    const lyricsFor = (name) => {
+      const base = name.replace(/\.midi?$/i, "");
+      return [base + ".paroles.txt", base + ".txt"].find((f) => files.has(f)) || null;
+    };
     const list = entries
       .filter((e) => e.type === "file" && /\.midi?$/i.test(e.name))
-      .map((e) => ({ name: e.name, title: titleFromFileName(e.name) }))
+      .map((e) => ({
+        name: e.name,
+        title: titleFromFileName(e.name),
+        lyricsFile: lyricsFor(e.name),
+      }))
       .sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true }));
     try {
       localStorage.setItem(SONGS_CACHE_KEY, JSON.stringify({ at: Date.now(), list }));
@@ -74,4 +84,16 @@ export async function fetchBuiltInSong(fileName) {
     throw new Error("Impossible de charger ce morceau (" + res.status + ").");
   }
   return res.arrayBuffer();
+}
+
+// Charge les paroles d'un morceau intégré (texte UTF-8), ou null si absentes.
+export async function fetchBuiltInLyrics(lyricsFile) {
+  if (!lyricsFile) return null;
+  try {
+    const res = await fetch(SONGS_RAW_BASE + encodeURIComponent(lyricsFile));
+    if (!res.ok) return null;
+    return await res.text();
+  } catch (err) {
+    return null; // hors ligne et jamais chargées : le morceau reste jouable
+  }
 }

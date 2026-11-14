@@ -28,6 +28,22 @@ function readText(bytes, pos, len) {
   return out.trim();
 }
 
+// Texte de paroles : UTF-8 si valide (fichiers récents), sinon Latin-1.
+// Les espaces sont conservés, ils marquent la fin des mots.
+function decodeLyric(bytes, pos, len) {
+  const slice = bytes.subarray(pos, pos + len);
+  if (typeof TextDecoder === "function") {
+    try {
+      return new TextDecoder("utf-8", { fatal: true }).decode(slice);
+    } catch (err) {
+      /* pas de l'UTF-8 : on lit en Latin-1 */
+    }
+  }
+  let out = "";
+  for (let i = 0; i < slice.length; i++) out += String.fromCharCode(slice[i]);
+  return out;
+}
+
 // Analyse une piste : événements note on/off en temps « ticks » + tempos.
 function parseTrackBytes(bytes, start, end) {
   let pos = start;
@@ -36,6 +52,7 @@ function parseTrackBytes(bytes, start, end) {
   let name = "";
   const notes = [];
   const tempos = [];
+  const lyrics = [];
   const open = new Map(); // canal×hauteur -> note en attente de note-off
   while (pos < end) {
     let [delta, p] = readVLQ(bytes, pos);
@@ -60,6 +77,8 @@ function parseTrackBytes(bytes, start, end) {
         });
       } else if (metaType === 0x03 && !name) {
         name = readText(bytes, pos, len);
+      } else if (metaType === 0x05 && len > 0) {
+        lyrics.push({ tick, text: decodeLyric(bytes, pos, len) });
       } else if (metaType === 0x2f) {
         break; // fin de piste
       }
@@ -105,7 +124,7 @@ function parseTrackBytes(bytes, start, end) {
       endTick: Math.max(tick, pending.startTick + 1),
     });
   }
-  return { name, notes, tempos };
+  return { name, notes, tempos, lyrics };
 }
 
 // Analyse un ArrayBuffer et renvoie { duration, tracks } avec les temps en
@@ -183,7 +202,8 @@ export function parseMidi(buffer) {
       }))
       .sort((a, b) => a.start - b.start);
     for (const n of notes) if (n.end > duration) duration = n.end;
-    tracks.push({ name: t.name || "Piste " + (i + 1), notes });
+    const lyrics = t.lyrics.map((l) => ({ time: tickToSec(l.tick), text: l.text }));
+    tracks.push({ name: t.name || "Piste " + (i + 1), notes, lyrics });
   });
   if (tracks.length === 0) {
     throw new Error("Ce fichier MIDI ne contient aucune note.");

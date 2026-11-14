@@ -108,6 +108,14 @@ export const PlusIcon = (p) => (
   </Svg>
 );
 
+export const LyricsIcon = (p) => (
+  <Svg {...p}>
+    <path d="M4 6h16M4 12h10M4 18h7" />
+    <path d="M18 13v6" />
+    <circle cx="16.5" cy="19" r="1.8" />
+  </Svg>
+);
+
 // Logo : trois touches, celle du milieu à l'accent.
 export const Logo = ({ size = 28 }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">

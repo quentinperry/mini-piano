@@ -1,0 +1,94 @@
+# Mozart, Messe en ut mineur K. 427 — Jesu Christe — Cum Sancto Spiritu
+# Paroles extraites de la partition (CPDL, Philip Legge) et alignées sur 05cumsancto.mid :
+# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus.
+
+[Soprano]
+Je-su, Je-su Chris-te,_
+Je-su Chris_-te, Je-su_ Chris-te,
+Je-su Chris-te.
+Cum sanc__-to spi-ri-tu in glo_______-ri-a De-i Pa_-tris,_
+a-men, a______-men, a___________________________-men,
+a______________________-men, a____________-men, a-men.
+Cum sanc__-to spi-ri-tu in glo___________________________________________________-ri-a De-i Pa-tris,
+a-men, a____________________-men, a____________________________________________-men,
+a__________________-men, a______-men, a____-men,
+a_____-men.
+Cum sanc__-to spi-ri-tu,
+a______________________________________________________________-men.
+Cum sanc__-to spi-ri-tu in glo________-ri-a.
+Cum sanc__-to spi-ri-tu,
+a______-men, a____________________________________-men, a-men,
+a-men, a-men.
+Cum sanc___-to spi___-ri-tu in glo_________________________________________________________________-ri-a De-i Pa_-tris.
+A_____-men, a_-men, a-men,
+a-men, a-men.
+
+[Alto]
+Je-su, Je______-su Chris-te,
+Je-su Chris-te,_____ Je_-su Chris-te.
+Cum sanc__-to spi-ri-tu in glo______________-ri-a De-i Pa____-tris,
+a_-men.
+Cum sanc__-to spi-ri-tu in glo_______-ri-a De-i Pa___-tris,
+a_______________-men, a____-men, a_-men,
+a____________-men, a______________-men, a___-men,
+a_______-men, a__________________-men, a_-men,
+a________________________-men, a_______________________________-men.
+Cum sanc__-to spi-ri-tu in glo______-ri-a De-i Pa_______-tris.
+Cum sanc__-to spi-ri-tu,
+a_____________________________________________-men.
+Cum sanc__-to spi-ri-tu in glo_________-ri-a,
+a______-men.
+Cum sanc__-to spi-ri-tu,
+a_-men, a_______-men, a-men,
+a-men,_ a-men._
+sanc______-to spi-ri-tu-in glo___-ri_-a,
+in glo___-ri_-a, in glo____________________-ri-a De-i_ Pa-tris.
+A_____-men, a-men, a-men,
+a-men, a-men.
+
+[Ténor]
+Je-su, Je_-su Chris_-te,
+Je__-su Chris-te, Je_-su Chris-te,
+Je_-su Chris-te.
+Cum sanc__-to spi-ri-tu in glo__________________________________-ri-a De-i Pa__________-tris,
+a___________-men, a______-men, a__________________________-men.
+Cum sanc__-to spi-ri-tu in glo_________-ri-a De-i Pa-tris,
+a______________-men, a_____________-men, a_____________________-men,
+a______-men, a______-men, a_______-men,
+a__-men, a________-men.
+Cum sanc__-to spi-ri-tu in glo-ri-a De-i Pa-tris,
+a-men, a-men, a_______________________-men,
+a______-men, a________________________________-men, a_______________________________________________________-men.
+Cum sanc__-to spi-ri-tu,
+cum sanc__-to spi-ri-tu,-cum sanc__-to spi-ri-tu,-a______-men,
+a-men, a___________________________-men, a-men,
+a__-men.
+Cum sanc__-to,_ cum sanc-to spi-ri-tu in glo___-ri_-a,-in
+glo___-ri_-a, in glo___________________-ri-a De-i Pa-tris.
+A_____-men, a-men, a-men,
+a-men, a-men.
+
+[Basse]
+Je-su, Je-su Chris_-te,
+Je-su Chris-te, Je_-su Chris_-te,
+Je_-su Chris-te.
+Cum sanc__-to spi-ri-tu in glo______________-ri-a De-i Pa-tris,
+a___-men, a_______________________-men, a____________-men,
+a-men,-a_______-men, a___-men.
+Cum sanc__-to spi-ri-tu in glo______-ri-a De_-i_ Pa___-tris,-a________________________-men,
+a____-men, a-men.
+Cum sanc__-to spi-ri-tu in glo___-ri_-a De_-i Pa___-tris,
+a_______________-men, a__________-men.
+Cum sanc__-to spi-ri-tu in glo-ri-a De-i Pa-tris,
+a-men, a________________________________-men, a__________________-men.
+Cum sanc__-to spi-ri-tu,
+a__-men.
+Cum sanc__-to spi-ri-tu,
+a____________________________________________________________________________________________-men.
+Cum sanc__-to spi-ri-tu,
+a______-men, a_-men, a______-men,
+a________-men, a-men.
+Cum sanc_-to spi-ri-tu in glo___-ri_-a,
+in glo___-ri_-a, in glo_______________-ri-a De-i Pa-tris.
+A_____-men, a_-men, a-men,
+a-men, a-men.

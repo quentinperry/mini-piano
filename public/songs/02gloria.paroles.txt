@@ -1,0 +1,77 @@
+# Mozart, Messe en ut mineur K. 427 — Gloria in excelsis Deo
+# Paroles extraites de la partition (CPDL, Philip Legge) et alignées sur 02gloria.mid :
+# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus.
+
+[Soprano]
+Glo-ri-a in ex-cel__________-sis,
+in ex-cel____-sis De-o,
+glo______-ri-a in ex-cel-sis,
+glo-ri-a in ex-cel-sis,
+in ex-cel-sis, in ex-cel-sis,
+in ex-cel_____________-sis De_-o,
+in ex-cel_________-sis_ De-o,
+in ex-cel-sis, in ex-cel-sis,
+in ex-cel-sis, et in__ ter-ra,
+in ter-ra pax ho-mi-ni-bus bo_-næ vo-lun-ta__-tis.
+Glo-ri-a in ex-cel-sis,
+in ex-cel-sis, in ex-cel-sis,
+in ex-cel_____________-sis De_-o,
+in ex-cel_________-sis_ De-o,
+in ex-cel-sis, in ex-cel-sis,
+in ex-cel-sis, et in__ ter-ra,
+in ter-ra pax ho-mi-ni-bus bo_-næ vo-lun-ta__-tis.
+
+[Alto]
+Glo_-ri-a in ex-cel_________________-sis,
+glo______-ri-a in ex-cel-sis,
+glo______-ri-a in ex-cel-sis,
+glo-ri-a in ex-cel-sis,
+in ex-cel-sis, in ex-cel________-sis,
+in ex-cel_________-sis_ De-o,
+in ex-cel_________-sis_ De-o,
+in ex-cel-sis, in ex-cel-sis,
+in ex-cel-sis, et in__ ter-ra,
+in ter-ra pax ho-mi-ni-bus bo_-næ vo-lun-ta__-tis.
+glo-ri-a in ex-cel-sis,
+in ex-cel-sis, in ex-cel________-sis,
+in ex-cel_________-sis_ De-o,
+in ex-cel_________-sis_ De-o,
+in ex-cel-sis, in ex-cel-sis,
+in ex-cel-sis, et in__ ter-ra,
+in ter-ra pax ho-mi-ni-bus bo_-næ vo-lun-ta__-tis.
+
+[Ténor]
+Glo_-ri-a in ex-cel__________-sis,
+in ex-cel_____________________-sis, glo______-ri-a in ex-cel-sis,
+glo-ri-a in ex-cel-sis,
+in ex-cel-sis, in ex-cel-sis,
+in ex-cel________-sis, in ex-cel_________-sis_ De-o,
+in ex-cel_______-sis De-o,
+in ex-cel-sis, in ex-cel-sis,
+in ex-cel-sis, et in__ ter-ra pax ho-mi-ni-bus bo_-næ
+vo-lun-ta__-tis.
+Glo-ri-a in ex-cel-sis,
+in ex-cel-sis, in ex-cel-sis,
+in ex-cel________-sis, in ex-cel_________-sis_ De-o,
+in ex-cel_______-sis De-o,
+in ex-cel-sis, in ex-cel-sis,
+in ex-cel-sis, et in__ ter-ra pax ho-mi-ni-bus bo_-næ
+vo-lun-ta___-tis.
+
+[Basse]
+Glo-ri-a in ex-cel__________________-sis,
+in_ ex-cel____-sis, in ex-cel____-sis De-o,
+glo-ri-a in ex-cel-sis,
+in ex-cel-sis, in ex-cel________-sis,
+in ex-cel_______-sis De-o,
+in ex-cel-sis De-o,
+in ex-cel-sis, in ex-cel-sis,
+in ex-cel-sis, et in__ ter-ra pax ho-mi-ni-bus bo_-næ
+vo-lun-ta-tis.
+Glo-ri-a in ex-cel-sis,
+in ex-cel-sis, in ex-cel________-sis,
+in ex-cel_______-sis De-o,
+in ex-cel-sis De-o,
+in ex-cel-sis, in ex-cel-sis,
+in ex-cel-sis, et in__ ter-ra pax ho-mi-ni-bus bo_-næ
+vo-lun-ta-tis.

@@ -1,6 +1,7 @@
 # Mozart, Messe en ut mineur K. 427 — Jesu Christe — Cum Sancto Spiritu
-# Paroles extraites de la partition (CPDL, Philip Legge) et alignées sur 05cumsancto.mid :
-# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus.
+# Paroles extraites de la partition vocale CPDL (P. Legge) (pages 62-74) et alignées sur 05cumsancto.mid par pdf2paroles :
+# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus,
+# « ~ » = syllabes chantées sur une même note.
 
 [Soprano]
 Je-su, Je-su Chris-te,_
@@ -60,11 +61,12 @@ Cum sanc__-to spi-ri-tu in glo-ri-a De-i Pa-tris,
 a-men, a-men, a_______________________-men,
 a______-men, a________________________________-men, a_______________________________________________________-men.
 Cum sanc__-to spi-ri-tu,
-cum sanc__-to spi-ri-tu,-cum sanc__-to spi-ri-tu,-a______-men,
-a-men, a___________________________-men, a-men,
-a__-men.
-Cum sanc__-to,_ cum sanc-to spi-ri-tu in glo___-ri_-a,-in
-glo___-ri_-a, in glo___________________-ri-a De-i Pa-tris.
+cum sanc__-to spi-ri-tu,
+cum sanc__-to spi-ri-tu,
+a______-men, a-men, a___________________________-men,
+a-men, a__-men.
+Cum sanc__-to,_ cum sanc-to spi-ri-tu in glo___-ri_-a,
+in glo___-ri_-a, in glo___________________-ri-a De-i Pa-tris.
 A_____-men, a-men, a-men,
 a-men, a-men.
 
@@ -74,9 +76,9 @@ Je-su Chris-te, Je_-su Chris_-te,
 Je_-su Chris-te.
 Cum sanc__-to spi-ri-tu in glo______________-ri-a De-i Pa-tris,
 a___-men, a_______________________-men, a____________-men,
-a-men,-a_______-men, a___-men.
-Cum sanc__-to spi-ri-tu in glo______-ri-a De_-i_ Pa___-tris,-a________________________-men,
-a____-men, a-men.
+a-men, a_______-men, a___-men.
+Cum sanc__-to-spi-ri-tu in glo______-ri-a De_-i_ Pa___-tris,
+a________________________-men, a____-men, a-men.
 Cum sanc__-to spi-ri-tu in glo___-ri_-a De_-i Pa___-tris,
 a_______________-men, a__________-men.
 Cum sanc__-to spi-ri-tu in glo-ri-a De-i Pa-tris,

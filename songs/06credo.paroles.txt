@@ -1,6 +1,7 @@
 # Mozart, Messe en ut mineur K. 427 — Credo in unum Deum
-# Paroles extraites de la partition (CPDL, Philip Legge) et alignées sur 06credo.mid :
-# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus.
+# Paroles extraites de la partition vocale CPDL (P. Legge) (pages 75-86) et alignées sur 06credo.mid par pdf2paroles :
+# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus,
+# « ~ » = syllabes chantées sur une même note.
 
 [Soprano I]
 Cre-do, cre-do in u-num De-um,
@@ -21,8 +22,8 @@ ge-ni-tum, non fac-tum,
 con-sub-stan-ti-a-lem Pa-tri,
 per quem o___________________________-mni-a fa-cta sunt.
 Cre-do, qui pro-pter nos ho-mi-nes et pro-pter no-stram
-sa-lu-tem, qui pro-pter nos ho-mi nes et pro-pter no-stramsa_-lu-tem
-de-scen-dit de cœ-lis,
+sa-lu-tem, qui pro-pter nos ho-mi nes et pro-pter no-stram
+sa-lu-tem de-scen-dit de cœ-lis,
 de-scen________________________-dit de cœ_-lis,
 de-scen-dit de cœ-lis,
 de cœ_-lis,______ de cœ-lis,
@@ -47,8 +48,8 @@ ge-ni-tum, non fac-tum,
 con-sub-stan-ti-a-lem Pa-tri,
 per quem o__________________-mni-a fa-cta sunt.
 Cre-do, qui pro-pter nos ho-mi-nes et pro-pter no-stram
-sa-lu-tem, qui pro-pter nos ho-mi nes et pro-pter no-stramsa_-lu-tem
-de-scen-dit de cœ-lis,
+sa-lu-tem, qui pro-pter nos ho-mi nes et pro-pter no-stram
+sa-lu-tem de-scen-dit de cœ-lis,
 de-scen-dit, de-scen______-dit,
 de-scen-dit de cœ-lis,
 de-scen-dit de cœ-lis,
@@ -73,8 +74,8 @@ ge-ni-tum, non fac-tum,
 con-sub-stan-ti-a-lem Pa-tri,
 per quem o____________-mni-a fa-cta sunt.
 Cre-do, qui pro_-pter nos ho-mi-nes et pro-pter no-stram
-sa-lu-tem, qui pro-pter nos ho-mi nes et pro-pter no-stramsa_-lu-tem
-de-scen-dit de cœ-lis,
+sa-lu-tem, qui pro-pter nos ho-mi nes et pro-pter no-stram
+sa-lu-tem de-scen-dit de cœ-lis,
 de-scen________________-dit, de-scen-dit de cœ-lis,
 de-scen-dit de cœ-lis,______
 de cœ-lis, de cœ-lis,
@@ -98,10 +99,11 @@ ge-ni-tum, non fac-tum,
 con-sub-stan-ti-a-lem Pa-tri,
 per quem o__________________________-mni-a fa-cta sunt.
 Cre-do, qui pro-pter nos ho-mi-nes et pro-pter no-stram
-sa-lu-tem, qui pro-pter nos ho-mi nes et pro-pter no-stramsa_-lu-tem
-de-scen-dit de cœ-lis,
+sa-lu-tem, qui pro-pter nos ho-mi nes et pro-pter no-stram
+sa-lu-tem de-scen-dit de cœ-lis,
 de-scen__________-dit, de-scen_-dit,
-de-scen-ditde_ cœ-lis, de-scen-dit de cœ-lis,
+de-scen-dit de cœ-lis,
+de-scen-dit de cœ-lis,
 de cœ-lis, de cœ_______-lis,___
 
 [Basse]
@@ -116,16 +118,17 @@ Je-sum Chri-stum fi-li-um,
 fi-li-um De-i u-ni-ge-ni-tum,
 et ex pa-tre na-tum cre-do,
 cre-do, cre-do, cre-do,
-an-te om-ni-a sæ__-cu-la,-De-um de De-o,
-lu-men de lu-mi-ne,
+an-te om-ni-a sæ__-cu-la,
+De-um de De-o, lu-men de lu-mi-ne,
 De-um ve-rum de De-o ve-ro,
 ge-ni-tum, non fac-tum,
 ge-ni-tum, non fac-tum,
 con-sub-stan-ti-a-lem Pa-tri,
-per quem o______________________-mni-a fa-cta-sunt.-Cre-do,
-qui pro-pter nos ho-mi-nes et pro-pter no-stram sa-lu-tem,
-qui pro-pter nos ho-mi nes et pro-pter no-stramsa_-lu-tem
-de-scen-dit de cœ-lis,
+per quem o______________________-mni-a fa-cta sunt.
+Cre-do, qui pro-pter nos ho-mi-nes et pro-pter no-stram
+sa-lu-tem, qui pro-pter nos ho-mi nes et pro-pter no-stram
+sa-lu-tem de-scen-dit de cœ-lis,
 de-scen________________-dit, de-scen_-dit,
-de-scen-ditde_ cœ-lis, de-scen-dit de cœ-lis,
+de-scen-dit de cœ-lis,
+de-scen-dit de cœ-lis,
 de cœ___-lis,____ de__ cœ-lis,

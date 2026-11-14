@@ -1,6 +1,7 @@
 # Mozart, Messe en ut mineur K. 427 — Sanctus — Osanna
-# Paroles extraites de la partition (CPDL, Philip Legge) et alignées sur 07sanctus.mid :
-# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus.
+# Paroles extraites de la partition vocale CPDL (P. Legge) (pages 90-102) et alignées sur 07sanctus.mid par pdf2paroles :
+# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus,
+# « ~ » = syllabes chantées sur une même note.
 
 [Soprano I]
 Sanc-tus, Sanc-tus, Sanc-tus Do-mi-nus De-us Sa-ba-oth,
@@ -54,7 +55,7 @@ o-san_____-na in ex-cel___-sis,
 in___ ex_-cel___________-sis, o-san-na,
 o-san-na, o-san-na in ex-cel_-sis,
 o-san-na, o-san-na,
-o___-san____-na,-in_ ex_-cel_-sis,__
+o___-san____-na, in_ ex_-cel_-sis,__
 in___ ex_-cel____-sis, o-san_____-na in ex-cel-sis,
 in ex-cel-sis, in ex-cel-sis,
 o-san-na, o-san-na,
@@ -71,7 +72,7 @@ in ex-cel_-sis, o-san-na in ex-cel_-sis,
 in ex-cel-sis, in ex-cel-sis.
 
 [Basse I]
-Sanc-tus, Sanc-tus, Sanc-tus__________ Do_-mi-nus De-us Sa-ba-oth,
+Sanc-tus, Sanc-tus, Sanc-tus_________ Do__-mi-nus De-us Sa-ba-oth,
 Do-mi-nus De-us Ple-ni sunt cœ-li et ter-ra,
 ple-ni sunt cœ-li et ter-ra glo-ri-a tu-a.
 O-san-na in ex-cel-sis,
@@ -122,7 +123,8 @@ in ex-cel-sis.
 Sanctus,~Sanc-tus,__ Sanc-tus, Do-mi-nus De-us Sa-ba-oth,
 Do-mi-nus, Do-mi-nus De-us Sa-ba-oth.
 Ple-ni, ple-ni sunt cœ-li et ter-ra,
-ter-ra glo-ri__-a tu-a.__-o-san-na in ex-cel-sis,
+ter-ra glo-ri__-a tu-a.__
+o-san-na in ex-cel-sis,
 o-san________-na, o-san_______-na,
 osanna, o-san-na, o_-san_-na,
 o-san__________________-na,__ o-san-na in ex-cel-sis,
@@ -151,14 +153,14 @@ o-san________-na, o-san_______-na,
 o-san-na, o-san-na,
 o-san-na in ex_-cel__________-sis,~o-san-na,
 o_-san-na,___ o-san_-na,_
-o-san-na, o-san-na,
-o-san__-na, o-san_-na in ex-cel-sis,~o-san-na,
 o-san-na,-o-san-na,
+o-san__-na, o-san_-na in ex-cel-sis,~o-san-na,
+o-san-na, o-san-na,
 o-san-na, o-san-na,
 o-san_-na~in ex-cel-sis,
 o-san-na in_ ex-cel-sis,
 osanna in ex-cel_-sis,__ o____-san____-na,
-o-san-na, o-san-na-in_ ex__-cel___________-sis,
+o-san-na, o-san-na in_ ex__-cel___________-sis,
 in_ ex_-cel_______-sis,__ o-san__-na,
 o_________-san-na, o-san-na,
 o-san-na in ex-cel-sis,
@@ -181,11 +183,13 @@ in___ ex_-cel_______-sis,___ o-san-na,
 o_-san_-na in_ ex-cel___________-sis,~o-sanna,
 o-san-na, o-sanna, osan-na in ex__-cel_-sis,
 in_ ex-cel_______________________________-sis, o-san-na,
-o-san-na in ex_-cel____________-sis,_-o-san-na in ex-cel-sis,
+o-san-na in ex_-cel____________-sis,_
+o-san-na in ex-cel-sis,
 o-san_______-na in ex-cel-sis,__
 o-san-na in ex-cel-sis,
 o_____-san-na in ex-cel-sis,
-o-sanna, o-san-na, o-san_-na,-o-san-na in ex-cel-sis,
+o-sanna, o-san-na, o-san_-na,
+o-san-na in ex-cel-sis,
 in ex-cel-sis, o-san-na in ex-cel_-sis,
 o-san-na in ex-cel-sis,
 in ex-cel-sis, in ex-cel-sis,

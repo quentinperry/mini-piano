@@ -229,8 +229,8 @@ export function createMidiPlayer(events, duration, { onNoteOn, onNoteOff, onEnd 
       // audio. Le glissement des timers JS n'a ainsi plus d'effet audible.
       const fire = () => {
         if (!playing) return;
-        if (ev.on) onNoteOn(ev.midi, ev.velocity, ev.t);
-        else onNoteOff(ev.midi, ev.t);
+        if (ev.on) onNoteOn(ev.midi, ev.velocity, ev.t, ev);
+        else onNoteOff(ev.midi, ev.t, ev);
       };
       if (delay <= TICK + 150) {
         fire();

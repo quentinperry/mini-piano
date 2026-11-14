@@ -1,13 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   PlayIcon, PauseIcon, Back10Icon, Fwd10Icon, ExpandIcon, ShrinkIcon,
-  FileIcon, NoteIcon, VolumeIcon, SustainIcon, MinusIcon, PlusIcon, Logo,
+  FileIcon, NoteIcon, VolumeIcon, SustainIcon, MinusIcon, PlusIcon, Logo, LyricsIcon,
 } from "./icons";
 import { Synth, ensureAudio, audioState, suspendAudio, onAudioStateChange } from "./audio";
 import { buildKeys, buildKeyMap, midiToFreq } from "./notes";
 import { parseMidi, createMidiPlayer } from "./midi";
-import { listBuiltInSongs, fetchBuiltInSong } from "./songs";
+import { listBuiltInSongs, fetchBuiltInSong, fetchBuiltInLyrics } from "./songs";
+import { detectVoice, findVoiceTrack } from "./voices";
+import { buildLyrics, lyricsSectionNames } from "./lyrics";
 import { Piano } from "./Piano";
+import { Lyrics } from "./Lyrics";
 
 // Tessitures chorales : base midi de chaque pupitre (mi = Do4).
 // Ténor par défaut.
@@ -82,6 +85,9 @@ export default function PianoApp() {
   // Avec une piste choisie : « lead » = mise en avant, les autres pistes
   // restent audibles plus doucement (par défaut) ; « solo » = piste seule.
   const [midiMix, setMidiMix] = useState("lead");
+  // Paroles du morceau : texte d'un fichier « .paroles.txt » (dépôt ou
+  // fichier local), alignées ensuite sur la piste suivie.
+  const [lyricsText, setLyricsText] = useState(null);
   const [midiSpeed, setMidiSpeed] = useState(1);
   const [midiPlaying, setMidiPlaying] = useState(false);
   const [midiActiveIds, setMidiActiveIds] = useState(() => new Set());
@@ -116,15 +122,32 @@ export default function PianoApp() {
   );
   const keyMap = useMemo(() => buildKeyMap(keys), [keys]);
   const keyByMidi = useMemo(() => new Map(keys.map((k) => [k.midi, k])), [keys]);
+  // Les rappels du lecteur MIDI lisent le clavier courant via cette
+  // référence : changer de pupitre ou d'octave en pleine lecture ne
+  // l'interrompt plus, les surbrillances suivent le nouveau clavier.
+  const keyByMidiRef = useRef(keyByMidi);
+  keyByMidiRef.current = keyByMidi;
 
+  // Piste du morceau qui correspond à un pupitre (-1 si aucune).
+  const voiceTrackOf = (m, id) => (m ? findVoiceTrack(m.tracks, id) : -1);
+
+  // Pupitre et piste se règlent en un seul geste : choisir « Alto » recale
+  // le clavier et, si le morceau a une piste d'alto, la met en avant.
   const chooseVoice = (id) => {
-    pauseMidi(); // les surbrillances MIDI ne suivraient plus le clavier
     setVoiceId(id);
     setOctave(0); // on recale le clavier sur la nouvelle tessiture
+    const idx = voiceTrackOf(midi, id);
+    if (idx >= 0 && String(idx) !== midiTrack) {
+      const track = String(idx);
+      setMidiTrack(track);
+      if (midiPlaying) {
+        pauseMidi();
+        startMidi(midiSpeed, track);
+      }
+    }
   };
 
   const shiftOctave = (d) => {
-    pauseMidi();
     setOctave((o) => Math.min(2, Math.max(-2, o + d)));
   };
 
@@ -257,8 +280,7 @@ export default function PianoApp() {
   // Changement d'octave ou de gabarit (rotation portrait/paysage) : on relâche
   // seulement les notes tenues au clavier ou à la souris, dont les touches
   // peuvent avoir disparu. La lecture MIDI continue : ses notes ne dépendent
-  // pas du gabarit affiché (chooseVoice/shiftOctave la mettent déjà en pause
-  // explicitement quand c'est voulu).
+  // pas du gabarit affiché, et ses surbrillances lisent le clavier courant.
   useEffect(() => {
     return () => {
       keyHeld.current.forEach((id) => synthRef.current.noteOff(id, 0.05));
@@ -363,7 +385,7 @@ export default function PianoApp() {
       at,
     });
     if (bg) return;
-    const key = keyByMidi.get(midiNum);
+    const key = keyByMidiRef.current.get(midiNum);
     if (key) {
       midiUiNoteRef.current = key;
       const cur = midiUiIdsRef.current || new Set(midiActiveIds);
@@ -386,7 +408,7 @@ export default function PianoApp() {
       synthRef.current.noteOff(voiceId, settingsRef.current.release);
     }
     if (bg) return;
-    const key = keyByMidi.get(midiNum);
+    const key = keyByMidiRef.current.get(midiNum);
     if (key) {
       const cur = midiUiIdsRef.current || new Set(midiActiveIds);
       cur.delete(key.id);
@@ -506,6 +528,36 @@ export default function PianoApp() {
     };
   }, []);
 
+  // Écran allumé pendant la lecture : sans cela, le téléphone se met en
+  // veille au milieu d'un morceau (et coupe le son sur certains appareils).
+  // Le verrou est rendu à la pause, et repris au retour au premier plan
+  // car le navigateur le relâche quand la page est cachée.
+  useEffect(() => {
+    if (!midiPlaying || typeof navigator === "undefined" || !("wakeLock" in navigator)) return;
+    let lock = null;
+    let cancelled = false;
+    const acquire = () => {
+      if (document.visibilityState !== "visible") return;
+      navigator.wakeLock
+        .request("screen")
+        .then((l) => {
+          if (cancelled) l.release().catch(() => {});
+          else lock = l;
+        })
+        .catch(() => {});
+    };
+    acquire();
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && (!lock || lock.released)) acquire();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisible);
+      if (lock) lock.release().catch(() => {});
+    };
+  }, [midiPlaying]);
+
   // Barre de progression : rafraîchie pendant la lecture uniquement.
   useEffect(() => {
     if (!midiPlaying) return;
@@ -531,6 +583,12 @@ export default function PianoApp() {
   const changeMidiTrack = (e) => {
     const track = e.target.value;
     setMidiTrack(track);
+    // Piste d'un pupitre reconnu : le clavier suit sa tessiture.
+    const voice = track !== "all" && midi ? detectVoice(midi.tracks[Number(track)].name) : null;
+    if (voice && voice !== voiceId) {
+      setVoiceId(voice);
+      setOctave(0);
+    }
     if (midiPlaying) {
       pauseMidi();
       startMidi(midiSpeed, track);
@@ -554,6 +612,26 @@ export default function PianoApp() {
     }
   };
 
+  // Au chargement d'un morceau, la piste du pupitre choisi est mise en avant
+  // d'emblée (toutes les pistes si aucune ne correspond).
+  const initialTrack = (parsed) => {
+    const idx = voiceTrackOf(parsed, voiceId);
+    return idx >= 0 ? String(idx) : "all";
+  };
+
+  // Paroles depuis un fichier local : pour essayer un texte avant de le
+  // déposer dans le dépôt, ou pour un MIDI ouvert depuis l'appareil.
+  const handleLyricsFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      setLyricsText(await file.text());
+    } catch (err) {
+      setMidiError("Impossible de lire ce fichier de paroles.");
+    }
+  };
+
   const handleMidiFile = async (e) => {
     const file = e.target.files && e.target.files[0];
     e.target.value = ""; // permet de rouvrir le même fichier
@@ -565,7 +643,8 @@ export default function PianoApp() {
     try {
       const parsed = parseMidi(await file.arrayBuffer());
       setMidi({ name: file.name, duration: parsed.duration, tracks: parsed.tracks });
-      setMidiTrack("all");
+      setMidiTrack(initialTrack(parsed));
+      setLyricsText(null);
       setMidiError(null);
     } catch (err) {
       setMidi(null);
@@ -585,15 +664,23 @@ export default function PianoApp() {
     setMidi(null);
     setMidiError(null);
     setSongLoading(fileName);
+    setLyricsText(null);
     try {
-      const parsed = parseMidi(await fetchBuiltInSong(fileName));
       const song = (songs || []).find((s) => s.name === fileName);
+      // MIDI et paroles se chargent en parallèle ; des paroles absentes ou
+      // injoignables n'empêchent pas de jouer le morceau.
+      const [buffer, text] = await Promise.all([
+        fetchBuiltInSong(fileName),
+        fetchBuiltInLyrics(song && song.lyricsFile),
+      ]);
+      const parsed = parseMidi(buffer);
       setMidi({
         name: song ? song.title : fileName,
         duration: parsed.duration,
         tracks: parsed.tracks,
       });
-      setMidiTrack("all");
+      setMidiTrack(initialTrack(parsed));
+      setLyricsText(text);
     } catch (err) {
       setMidi(null);
       setMidiError(String(err && err.message ? err.message : err));
@@ -609,6 +696,24 @@ export default function PianoApp() {
   const currentPos = () =>
     midiPlayerRef.current ? midiPlayerRef.current.getPos() : midiProgress;
   const canResume = midi && midiProgress > 0.05 && midiProgress < midi.duration - 0.05;
+
+  // Piste suivie par les paroles : la piste choisie, ou celle du pupitre
+  // quand toutes les pistes jouent.
+  const focusTrack = midi
+    ? midiTrack !== "all"
+      ? Number(midiTrack)
+      : voiceTrackOf(midi, voiceId)
+    : -1;
+  const lyrics = useMemo(
+    () => buildLyrics(midi, lyricsText, focusTrack),
+    [midi, lyricsText, focusTrack]
+  );
+  const focusTrackName = midi && focusTrack >= 0 ? midi.tracks[focusTrack].name : null;
+  const voiceLabel = (name) => {
+    const v = detectVoice(name);
+    const t = v && TESSITURES.find((x) => x.id === v);
+    return t ? t.label : null;
+  };
 
   return (
     <div
@@ -732,6 +837,54 @@ export default function PianoApp() {
         rangée du dessus pour les noires.
       </p>
 
+      {/* ---- Paroles du morceau, synchronisées avec la lecture ---- */}
+      {midi && (lyrics || lyricsText) && (
+        <section className="panel panel-lyrics" aria-labelledby="lyrics-title">
+          <div className="panel-head">
+            <button
+              type="button"
+              className={`mini-play${midiPlaying ? " is-playing" : ""}`}
+              onClick={toggleMidi}
+              aria-label={midiPlaying ? "Pause" : "Lire"}
+            >
+              {midiPlaying ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
+            </button>
+            <h2 id="lyrics-title" className="panel-title">Paroles</h2>
+            {focusTrackName && (
+              <span className="panel-sub">
+                {voiceLabel(focusTrackName) || "Piste"} · {focusTrackName}
+              </span>
+            )}
+          </div>
+          {lyrics ? (
+            <>
+              <Lyrics
+                lyrics={lyrics}
+                playing={midiPlaying}
+                getPos={currentPos}
+                progress={midiProgress}
+                onSeek={seekMidi}
+              />
+              {lyrics.source === "file" && (lyrics.unusedNotes > 0 || lyrics.missingNotes > 0) && (
+                <p className="lyrics-check">
+                  {lyrics.missingNotes > 0
+                    ? `Alignement : ${lyrics.missingNotes} syllabe${lyrics.missingNotes > 1 ? "s" : ""} de plus que de notes dans la piste.`
+                    : `Alignement : ${lyrics.unusedNotes} note${lyrics.unusedNotes > 1 ? "s" : ""} de la piste sans syllabe à la fin du texte.`}{" "}
+                  ({lyrics.syllableCount} syllabes, {lyrics.noteCount} notes)
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="midi-empty">
+              {focusTrackName
+                ? `Pas de paroles pour la piste « ${focusTrackName} ».`
+                : "Choisissez une piste pour afficher ses paroles."}{" "}
+              Paroles disponibles pour : {lyricsSectionNames(lyricsText).join(", ") || "—"}.
+            </p>
+          )}
+        </section>
+      )}
+
       {/* ---- Panneaux : son et lecture MIDI ---- */}
       <div className="panels">
         <section className="panel panel-sound" aria-labelledby="sound-title">
@@ -786,6 +939,7 @@ export default function PianoApp() {
                   {songs.map((s) => (
                     <option key={s.name} value={s.name}>
                       {s.title}
+                      {s.lyricsFile ? " · paroles" : ""}
                     </option>
                   ))}
                 </select>
@@ -834,6 +988,19 @@ export default function PianoApp() {
             <div className="player">
               <div className="player-title">
                 <span className="player-name">{midi.name}</span>
+                <label
+                  className="chip-btn"
+                  title="Charger un fichier de paroles (.txt) pour ce morceau"
+                >
+                  <LyricsIcon size={16} />
+                  <span>{lyrics || lyricsText ? "Autres paroles…" : "Ajouter des paroles"}</span>
+                  <input
+                    type="file"
+                    accept=".txt,text/plain"
+                    hidden
+                    onChange={handleLyricsFile}
+                  />
+                </label>
               </div>
 
               <div className="seek">
@@ -888,7 +1055,8 @@ export default function PianoApp() {
                       <option value="all">Toutes les pistes</option>
                       {midi.tracks.map((t, i) => (
                         <option key={i} value={String(i)}>
-                          {t.name} ({t.notes.length})
+                          {t.name}
+                          {voiceLabel(t.name) ? ` · ${voiceLabel(t.name)}` : ""} ({t.notes.length})
                         </option>
                       ))}
                     </select>

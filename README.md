@@ -9,6 +9,9 @@ notes en notation solfège (Do, Ré, Mi…), avec un son de piano synthétisé e
 - Sélecteur de tessiture : **Soprano** (Do4–Do6), **Alto** (Sol3–Sol5), **Ténor** (Do3–Do5), **Basse** (Mi2–Mi4)
 - Clavier étendu automatiquement en paysage, compact en portrait (détection automatique de l'orientation)
 - Lecture de fichiers MIDI : choisir sa piste (son pupitre), mise en avant avec les autres pistes jouées plus doucement en fond (par défaut) ou piste seule, vitesse ×0,5 à ×1,5, touches illuminées en rythme, pause/reprise à la position courante et curseur de navigation dans le morceau
+- Pupitre et piste en un geste : la piste de chaque pupitre est reconnue d'après son nom (S, S I, Canto, Tenore, B2…) et mise en avant quand on choisit son pupitre
+- Paroles synchronisées : un fichier `<morceau>.paroles.txt` à côté du MIDI, une syllabe par note de la piste du pupitre ; défilement, texte complet (toucher une ligne pour y reprendre) et mode « de mémoire » pour réviser (voir `public/songs/README.md`). Les paroles intégrées aux MIDI sont aussi lues
+- L'écran reste allumé pendant la lecture d'un morceau
 - Morceaux intégrés : le menu « Morceaux intégrés » propose les fichiers MIDI déposés dans le dossier `songs/` du dépôt (voir « Ajouter des morceaux intégrés »)
 - Notation solfège + équivalent international + fréquence affichée
 - Synthèse de type piano : partiels harmoniques, attaque percussive, décrément naturel (les graves résonnent plus longtemps)

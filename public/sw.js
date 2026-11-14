@@ -2,8 +2,8 @@
 // Après chaque build, scripts/generate-sw-manifest.mjs écrit sw-manifest.js
 // (liste des fichiers produits) : on les pré-cache à l'installation, pour
 // qu'une visite hors ligne fonctionne dès le déploiement suivant.
-const CACHE = "mini-piano-v7";
-const CORE_ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
+const CACHE = "mini-piano-v8";
+const CORE_ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./apple-touch-icon.png"];
 let PRECACHE_ASSETS = CORE_ASSETS;
 try {
   importScripts("sw-manifest.js");

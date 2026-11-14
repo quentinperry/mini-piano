@@ -9,6 +9,14 @@
     <meta name="color-scheme" content="light dark" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192" />
+    <!-- iOS n'utilise pas les icônes SVG pour l'écran d'accueil : sans cette
+         image PNG, il affiche une icône générique avec la première lettre. -->
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180" />
+    <meta name="apple-mobile-web-app-title" content="Mini Piano" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="preconnect" href="https://api.github.com" />
     <link rel="preconnect" href="https://raw.githubusercontent.com" />
   </head>

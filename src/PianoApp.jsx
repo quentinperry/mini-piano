@@ -7,7 +7,7 @@ import { Synth, ensureAudio, audioState, suspendAudio, onAudioStateChange } from
 import { buildKeys, buildKeyMap, midiToFreq } from "./notes";
 import { parseMidi, createMidiPlayer } from "./midi";
 import { listBuiltInSongs, fetchBuiltInSong, fetchBuiltInLyrics } from "./songs";
-import { detectVoice, findVoiceTrack } from "./voices";
+import { detectVoice, findVoiceTrack, normalizeName } from "./voices";
 import { buildLyrics, lyricsSectionNames } from "./lyrics";
 import { Piano } from "./Piano";
 import { Lyrics } from "./LyricsPanel";
@@ -714,6 +714,11 @@ export default function PianoApp() {
     const t = v && TESSITURES.find((x) => x.id === v);
     return t ? t.label : null;
   };
+  // Pupitre et nom de piste, sans répéter « Ténor · Ténor » quand ils coïncident.
+  const trackLabel = (name) => {
+    const label = voiceLabel(name);
+    return label && normalizeName(label) !== normalizeName(name) ? `${name} · ${label}` : name;
+  };
 
   return (
     <div
@@ -852,7 +857,9 @@ export default function PianoApp() {
             <h2 id="lyrics-title" className="panel-title">Paroles</h2>
             {focusTrackName && (
               <span className="panel-sub">
-                {voiceLabel(focusTrackName) || "Piste"} · {focusTrackName}
+                {voiceLabel(focusTrackName) && normalizeName(voiceLabel(focusTrackName)) === normalizeName(focusTrackName)
+                  ? focusTrackName
+                  : `${voiceLabel(focusTrackName) || "Piste"} · ${focusTrackName}`}
               </span>
             )}
           </div>
@@ -1055,8 +1062,7 @@ export default function PianoApp() {
                       <option value="all">Toutes les pistes</option>
                       {midi.tracks.map((t, i) => (
                         <option key={i} value={String(i)}>
-                          {t.name}
-                          {voiceLabel(t.name) ? ` · ${voiceLabel(t.name)}` : ""} ({t.notes.length})
+                          {trackLabel(t.name)} ({t.notes.length})
                         </option>
                       ))}
                     </select>

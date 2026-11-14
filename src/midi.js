@@ -21,11 +21,11 @@ function readTag(bytes, pos) {
   return String.fromCharCode(bytes[pos], bytes[pos + 1], bytes[pos + 2], bytes[pos + 3]);
 }
 
-// Les noms de pistes des fichiers de chorales sont en Latin-1 en général.
+// Noms de pistes : Latin-1 dans les anciens fichiers de chorales ;
+// Les logiciels récents (MuseScore…) les écrivent en UTF-8 : « Ténor » lu en
+// Latin-1 deviendrait « TÃ©nor » et ne serait plus reconnu comme un pupitre.
 function readText(bytes, pos, len) {
-  let out = "";
-  for (let i = 0; i < len; i++) out += String.fromCharCode(bytes[pos + i]);
-  return out.trim();
+  return decodeLyric(bytes, pos, len).trim();
 }
 
 // Texte de paroles : UTF-8 si valide (fichiers récents), sinon Latin-1.

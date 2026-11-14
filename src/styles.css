@@ -1393,3 +1393,295 @@ button {
   font-size: 12px;
   color: var(--warn);
 }
+
+/* ---------------------------------------------------------------------
+   Bibliothèque des morceaux (dossiers, fil d'Ariane, recherche)
+   --------------------------------------------------------------------- */
+.library {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.lib-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lib-trigger:hover,
+.lib-trigger.is-open {
+  border-color: var(--ink-3);
+}
+
+.lib-trigger.is-open .lib-chevron {
+  transform: rotate(180deg);
+}
+
+.lib-chevron {
+  margin-left: auto;
+  color: var(--ink-3);
+  display: grid;
+  transition: transform 0.15s ease;
+}
+
+.lib-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+}
+
+.lib-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.lib-name {
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lib-placeholder {
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.lib-path {
+  font-size: 12px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lib-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  width: max(100%, min(460px, 90vw));
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  box-shadow: 0 24px 50px -18px rgba(0, 0, 0, 0.35), var(--shadow-sm);
+}
+
+.lib-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lib-crumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.lib-crumbs button {
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-strong);
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lib-crumbs button:hover {
+  background: var(--accent-soft);
+}
+
+.lib-crumbs button.is-current {
+  color: var(--ink);
+  cursor: default;
+  background: transparent;
+}
+
+.lib-sep {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.lib-close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.lib-close:hover {
+  background: var(--surface-2);
+}
+
+.lib-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  min-height: 38px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--ink-3);
+}
+
+.lib-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: var(--ink);
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.lib-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.lib-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.lib-row:hover {
+  background: var(--surface-2);
+}
+
+.lib-folder .lib-icon {
+  color: var(--accent);
+}
+
+.lib-song.is-selected {
+  background: var(--accent-soft);
+}
+
+.lib-song.is-selected .lib-icon {
+  color: var(--accent-strong);
+}
+
+.lib-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.lib-go {
+  display: grid;
+  color: var(--ink-3);
+  transform: rotate(-90deg);
+}
+
+.lib-back {
+  transform: rotate(90deg);
+}
+
+.lib-up .lib-name {
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.lib-badge {
+  margin-left: auto;
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.lib-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 10px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+/* Lecteur : dossier du morceau au-dessus de son titre */
+.player-heading {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.player-path {
+  font-size: 12px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Portrait : la bibliothèque s'ouvre dans le flux de la page, sur toute la
+   largeur du bloc, et pousse le reste vers le bas */
+.layout-narrow .lib-panel {
+  position: static;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 6px;
+}
+
+.layout-narrow .lib-list {
+  max-height: min(60vh, 460px);
+}
+
+.library {
+  scroll-margin-top: 12px;
+}

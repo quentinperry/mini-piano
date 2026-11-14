@@ -13,7 +13,7 @@ notes en notation solfège (Do, Ré, Mi…), avec un son de piano synthétisé e
 - Paroles synchronisées : un fichier `<morceau>.paroles.txt` à côté du MIDI, une syllabe par note de la piste du pupitre ; défilement, texte complet (toucher une ligne pour y reprendre) et mode « de mémoire » pour réviser (voir `public/songs/README.md`). Les paroles intégrées aux MIDI sont aussi lues
 - L'écran reste allumé pendant la lecture d'un morceau
 - Outil `outils/pdf2paroles` : extrait les paroles d'une partition PDF par pupitre et les aligne sur le MIDI (voir son README)
-- Morceaux intégrés : le menu « Morceaux intégrés » propose les fichiers MIDI déposés dans le dossier `songs/` du dépôt (voir « Ajouter des morceaux intégrés »)
+- Bibliothèque de morceaux intégrés : les fichiers MIDI déposés dans `public/songs/`, rangés en dossiers (compositeur, œuvre…), avec fil d'Ariane, recherche et dernier dossier retenu (voir « Ajouter des morceaux intégrés »)
 - Notation solfège + équivalent international + fréquence affichée
 - Synthèse de type piano : partiels harmoniques, attaque percussive, décrément naturel (les graves résonnent plus longtemps)
 - Jouable à la souris, au toucher, ou au clavier **AZERTY** : rangée du bas pour les blanches (Q S D F G H J K L M W X C V B), rangée du haut pour les noires
@@ -23,18 +23,21 @@ notes en notation solfège (Do, Ré, Mi…), avec un son de piano synthétisé e
 
 ## Ajouter des morceaux intégrés
 
-Le menu « Morceaux intégrés » de l'app liste automatiquement les fichiers
-`.mid` / `.midi` du dossier `public/songs/` de la branche `main` — aucun
+La bibliothèque de l'app liste automatiquement les fichiers `.mid` / `.midi`
+du dossier `public/songs/` de la branche `main`, sous-dossiers compris — aucun
 changement de code n'est nécessaire :
 
-1. Sur GitHub, ouvrez le dossier `public/songs/` (branche `main`, la branche par défaut).
+1. Sur GitHub, ouvrez le dossier `public/songs/` (branche `main`), puis le
+   sous-dossier voulu (par ex. `Mozart/Messe en ut mineur K. 427/`).
 2. « Add file » → « Upload files », déposez vos `.mid`, validez le commit.
-3. Le morceau apparaît dans le menu en une à deux minutes, servi depuis le
-   dépôt sans attendre un nouveau déploiement.
+3. Le morceau apparaît dans la bibliothèque en une à deux minutes, servi
+   depuis le dépôt sans attendre un nouveau déploiement.
 
-Le nom du fichier sert de libellé (« 01kyrie.mid » s'affichera « 01 Kyrie ») ;
-tout fichier non-MIDI est ignoré. Un morceau écouté une fois est mis en
-cache par le service worker et reste disponible hors ligne.
+Le nom du fichier sert de titre (« 04 Qui tollis.mid » s'affichera « 04 Qui
+tollis ») ; un numéro en tête fixe l'ordre. Le rangement en dossiers et les
+paroles sont détaillés dans [`public/songs/README.md`](public/songs/README.md).
+Un morceau écouté une fois est mis en cache par le service worker et reste
+disponible hors ligne.
 
 ## Lancer en local
 

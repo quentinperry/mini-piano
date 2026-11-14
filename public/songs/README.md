@@ -4,13 +4,38 @@ L'application propose automatiquement tous les fichiers MIDI déposés dans ce d
 
 Pour en ajouter un :
 
-1. « Add file » → « Upload files », déposer un ou plusieurs `.mid`, valider le commit.
-2. Le morceau apparaît dans le menu « Morceaux intégrés » de l'app en une à deux minutes.
+1. Ouvrir le dossier où le ranger (voir ci-dessous), puis « Add file » → « Upload files »,
+   déposer un ou plusieurs `.mid`, valider le commit.
+2. Le morceau apparaît dans la bibliothèque de l'app en une à deux minutes.
 
-Le nom du fichier sert de libellé (« 01kyrie.mid » s'affichera « 01 Kyrie ») ;
-espaces et accents bienvenus. Tout fichier non-MIDI est ignoré. Un morceau
-écouté une fois est mis en cache par le service worker et reste disponible
-hors ligne.
+Le nom du fichier sert de titre (« 04 Qui tollis.mid » s'affichera « 04 Qui tollis ») ;
+espaces et accents bienvenus, un numéro en tête fixe l'ordre. Tout fichier non-MIDI
+est ignoré. Un morceau écouté une fois est mis en cache par le service worker et
+reste disponible hors ligne.
+
+## Ranger en dossiers
+
+Les morceaux se rangent dans des sous-dossiers, sur autant de niveaux que voulu :
+l'app les présente comme une bibliothèque où l'on navigue de dossier en dossier
+(avec une recherche sur tous les titres). Par exemple :
+
+```
+songs/
+├── Mozart/
+│   └── Messe en ut mineur K. 427/
+│       ├── 01 Kyrie.mid
+│       ├── 01 Kyrie.paroles.txt
+│       └── …
+└── Rameau/
+    ├── Hymne à la nuit.mid
+    └── Hymne à la nuit.paroles.txt
+```
+
+Sur GitHub, un dossier se crée en ajoutant un fichier : « Add file » →
+« Create new file », puis taper `Brahms/Requiem/` avant le nom du fichier (le
+`/` crée le dossier). Pour déplacer un fichier existant, l'éditer (crayon) et
+changer son chemin dans le champ du nom. Les paroles restent toujours **dans le
+même dossier** que leur MIDI.
 
 ## Pistes et pupitres
 
@@ -26,13 +51,13 @@ Les paroles se mettent dans un fichier texte **du même nom que le MIDI**,
 terminé par `.paroles.txt` :
 
 ```
-01kyrie.mid
-01kyrie.paroles.txt   ← paroles du Kyrie
+01 Kyrie.mid
+01 Kyrie.paroles.txt   ← paroles du Kyrie
 ```
 
-Pour le créer sur GitHub : « Add file » → « Create new file », nom
-`01kyrie.paroles.txt`, coller le texte, valider. Le menu des morceaux affiche
-alors « · paroles » à côté du titre.
+Pour le créer sur GitHub : dans le dossier du morceau, « Add file » →
+« Create new file », nom `01 Kyrie.paroles.txt`, coller le texte, valider. La bibliothèque affiche alors
+« paroles » à côté du titre.
 
 ### Le principe : une syllabe par note
 

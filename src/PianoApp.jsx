@@ -11,6 +11,7 @@ import { detectVoice, findVoiceTrack, normalizeName } from "./voices";
 import { buildLyrics, lyricsSectionNames } from "./lyrics";
 import { Piano } from "./Piano";
 import { Lyrics } from "./LyricsPanel";
+import { Library } from "./Library";
 
 // Tessitures chorales : base midi de chaque pupitre (mi = Do4).
 // Ténor par défaut.
@@ -654,8 +655,7 @@ export default function PianoApp() {
 
   // Morceau intégré : même chemin que l'ouverture d'un fichier, seul le
   // transport change (téléchargement depuis le site au lieu d'un upload).
-  const chooseBuiltInSong = async (e) => {
-    const fileName = e.target.value;
+  const chooseBuiltInSong = async (fileName) => {
     setSelectedSong(fileName);
     if (!fileName) return;
     pauseMidi();
@@ -676,6 +676,7 @@ export default function PianoApp() {
       const parsed = parseMidi(buffer);
       setMidi({
         name: song ? song.title : fileName,
+        folder: song && song.folder ? song.folder : [],
         duration: parsed.duration,
         tracks: parsed.tracks,
       });
@@ -934,38 +935,13 @@ export default function PianoApp() {
           <h2 id="midi-title" className="panel-title">S'entraîner sur un morceau</h2>
 
           <div className="source-row">
-            <div className="select-wrap">
-              <NoteIcon size={18} />
-              {songs !== null && songs.length > 0 ? (
-                <select
-                  value={selectedSong}
-                  onChange={chooseBuiltInSong}
-                  aria-label="Morceaux intégrés"
-                >
-                  <option value="">Morceaux intégrés…</option>
-                  {songs.map((s) => (
-                    <option key={s.name} value={s.name}>
-                      {s.title}
-                      {s.lyricsFile ? " · paroles" : ""}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <select
-                  onFocus={loadSongs}
-                  onClick={loadSongs}
-                  onPointerDown={loadSongs}
-                  disabled={songs !== null && songs.length === 0}
-                  aria-label="Morceaux intégrés"
-                >
-                  <option>
-                    {songs !== null && songs.length === 0
-                      ? "Morceaux indisponibles"
-                      : "Morceaux intégrés…"}
-                  </option>
-                </select>
-              )}
-            </div>
+            <Library
+              songs={songs}
+              selected={selectedSong}
+              loading={songs === null}
+              onOpen={loadSongs}
+              onChoose={chooseBuiltInSong}
+            />
             <label className="file-btn" title="Ouvrir un fichier MIDI">
               <FileIcon size={18} />
               <span>Fichier MIDI</span>
@@ -994,7 +970,12 @@ export default function PianoApp() {
           {midi && (
             <div className="player">
               <div className="player-title">
-                <span className="player-name">{midi.name}</span>
+                <span className="player-heading">
+                  {midi.folder && midi.folder.length > 0 && (
+                    <span className="player-path">{midi.folder.join(" › ")}</span>
+                  )}
+                  <span className="player-name">{midi.name}</span>
+                </span>
                 <label
                   className="chip-btn"
                   title="Charger un fichier de paroles (.txt) pour ce morceau"

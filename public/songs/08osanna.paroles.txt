@@ -1,0 +1,59 @@
+# Mozart, Messe en ut mineur K. 427 — Osanna (reprise après le Benedictus)
+# Paroles extraites de la partition (CPDL, Philip Legge) et alignées sur 08osanna.mid :
+# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus.
+
+[Soprano I]
+O___-san_______________________________-na, o-san-na in ex-cel-sis,
+in_ ex_-cel_______________________-sis, o-san_______________________________-na in ex-cel-sis,
+o-san-na in ex-cel-sis,___
+in_____ ex-cel-sis,________
+
+[Alto I]
+O___-san_______-na, o-san-na in ex-cel-sis,
+o-san________-na, o-san-na,
+o-san-na, o___-san___________________________-na___ in ex-cel-sis,
+o_-san-na in______ ex________-cel-sis,
+in ex-cel-sis,
+
+[Ténor I]
+O___-san_______________-na, o-san-na in ex-cel-sis,
+o-san-na, o-san-na,
+o___-san_____________________________-na in ex-cel_-sis,
+o-san-na in ex-cel-sis,
+in____ ex____-cel___-sis,______
+
+[Basse I]
+O-san-na in ex-cel-sis,
+o-san-na in ex-cel-sis,
+o-san______-na, o-san-na,
+o-san-na, o___-san___________________________-na___ in ex-cel-sis,
+o_-san-na in______ ex_____-cel___-sis,_
+in ex-cel-sis,
+
+[Soprano II]
+In_ ex_-cel______________________________________-sis, o___-san________________________-na,
+o-san-na in ex-cel-sis,
+in ex-cel-sis, o-san-na in ex-cel_________-sis,__
+o________
+
+[Alto II]
+O-san_-na in________ ex_____-cel___-sis,
+o-san____-na, o-san-na,
+o-san__-na, o-san-na in ex-cel-sis,
+in ex-cel-sis, o-san-na______________ in ex-cel__-sis,
+o__
+
+[Ténor II]
+In_ ex_-cel_______-sis,_______________ o-san-na,
+o-san-na, o-san-na,
+o-san-na in ex-cel-sis,
+in ex-cel_-sis, o-san-na in ex-cel_-sis,_______
+o____________
+
+[Basse II]
+__ O-san-na in ex-cel-sis,
+o_____-san-na in ex-cel-sis,
+o-san-na, o-san-na,
+o-san-na,-o-san-na in ex-cel-sis,
+in ex-cel-sis, o_-san-na in_ ex_-cel______-sis,
+o__________

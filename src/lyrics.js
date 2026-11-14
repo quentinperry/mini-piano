@@ -12,6 +12,7 @@
 // Les tirets séparent les syllabes d'un mot, les espaces séparent les mots,
 // chaque ligne du fichier est une ligne à l'écran, une ligne vide marque un
 // paragraphe. On peut coller les « _ » à la syllabe : « lei__ » = 3 notes.
+// « ~ » relie deux syllabes chantées sur une même note : « qui~tol-lis ».
 
 import { detectVoice, normalizeName, choirOf } from "./voices.js";
 
@@ -115,7 +116,8 @@ function tokenizeLine(text) {
         return;
       }
       const isLast = i === parts.length - 1 || parts.slice(i + 1).every((p) => !p.replace(/_/g, ""));
-      out.push({ text: t, ext: u, joinNext: !isLast || trailingHyphen });
+      // « ~ » : élision, plusieurs syllabes chantées sur une seule note
+      out.push({ text: t.replace(/~/g, " "), ext: u, joinNext: !isLast || trailingHyphen });
     });
   }
   return out;

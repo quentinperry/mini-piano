@@ -15,7 +15,7 @@ su-sci-pe de-pre-ca___-ti-o-nem no-stram.
 Qui se-des_ ad dex-te-ram Pa-tris,
 qui se-des ad dex-te-ram Pa-tris,
 qui se-des, qui se-des,
-qui se_-des ad dex-te-ram Pa-tris,
+qui se_-des~ad dex-te-ram Pa_-tris,
 mi-se-re-re, mi-se-re-re no-bis,
 mi-se-re-re, mi-se-re-re,
 mi-se-re-re no______-bis,
@@ -111,8 +111,8 @@ mi-se
 
 [Ténor II]
 Qui tol_-lis pec-ca-ta_ mun__-di,
-qui tol-lis, qui tol-lis pec-ca-ta mun-di,
-pec-ca-ta mun_-di, mi-se-re-re no-bis.
+qui tol-lis, qui~tol-lis pec-ca-ta mun-di,
+pec-ca-ta mun__-di, mi-se-re-re no-bis.
 Qui tol-lis pec-ca-ta,
 qui tol-lis, qui tol-lis pec-ca-ta,
 qui tol_-lis pec-ca-ta mun-di,

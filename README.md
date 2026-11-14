@@ -12,6 +12,7 @@ notes en notation solfège (Do, Ré, Mi…), avec un son de piano synthétisé e
 - Pupitre et piste en un geste : la piste de chaque pupitre est reconnue d'après son nom (S, S I, Canto, Tenore, B2…) et mise en avant quand on choisit son pupitre
 - Paroles synchronisées : un fichier `<morceau>.paroles.txt` à côté du MIDI, une syllabe par note de la piste du pupitre ; défilement, texte complet (toucher une ligne pour y reprendre) et mode « de mémoire » pour réviser (voir `public/songs/README.md`). Les paroles intégrées aux MIDI sont aussi lues
 - L'écran reste allumé pendant la lecture d'un morceau
+- Outil `outils/pdf2paroles` : extrait les paroles d'une partition PDF par pupitre et les aligne sur le MIDI (voir son README)
 - Morceaux intégrés : le menu « Morceaux intégrés » propose les fichiers MIDI déposés dans le dossier `songs/` du dépôt (voir « Ajouter des morceaux intégrés »)
 - Notation solfège + équivalent international + fréquence affichée
 - Synthèse de type piano : partiels harmoniques, attaque percussive, décrément naturel (les graves résonnent plus longtemps)

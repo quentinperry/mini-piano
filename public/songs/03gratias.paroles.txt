@@ -1,32 +1,33 @@
 # Mozart, Messe en ut mineur K. 427 — Gratias
-# Paroles extraites de la partition (CPDL, Philip Legge) et alignées sur 03gratias.mid :
-# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus.
+# Paroles extraites de la partition vocale CPDL (P. Legge) (pages 29-30) et alignées sur 03gratias.mid par pdf2paroles :
+# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus,
+# « ~ » = syllabes chantées sur une même note.
 
 [Soprano I]
-Gra-ti-as, gra-ti-as a-gimus_ ti-bi pro-pter mag_-nam,
+Gra-ti-as, gra-ti-as a-gi-mus ti-bi pro-pter mag_-nam,
 mag-nam glo-ri-am tu-am,
 gra-ti-as a-gi-mus pro-pter mag-nam glo-ri-am,
 pro-pter mag-nam glo-ri-am tu_-am.
 
 [Soprano II]
-Gra-ti-as a-gimus_ ti-bi pro-pter mag_-nam,
+Gra-ti-as a-gi-mus ti-bi pro-pter mag_-nam,
 mag-nam glo-ri-am tu__-am,
 gra-ti-as a-gi-mus pro-pter mag-nam glo-ri-am tu-am.
 
 [Alto]
-Gra-ti-as a-gimus_ ti-bi pro-pter mag_-nam,
+Gra-ti-as a-gi-mus ti-bi pro-pter mag_-nam,
 mag-nam glo-ri-am tu___-am,
 gra-ti-as a-gi-mus pro-pter mag-nam glo-ri-am,
 pro-pter mag-nam glo-ri-am tu_-am.
 
 [Ténor]
-Gra-ti-as a-gimus_ ti-bi pro-pter mag_-nam,
+Gra-ti-as a-gi-mus ti-bi pro-pter mag_-nam,
 mag-nam glo-ri-am tu___-am,
 gra-ti-as a-gi-mus pro-pter mag-nam glo-ri-am,
 pro-pter mag-nam glo-ri-am tu_-am.
 
 [Basse]
-Gra-ti-as a-gimus_ ti-bi pro-pter,pro_-pter mag_-nam,
+Gra-ti-as a-gi-mus ti-bi pro-pter,pro_-pter mag_-nam,
 mag-nam glo-ri-am tu-am,
 gra-ti-as a-gi-mus pro-pter mag-nam glo-ri-am,
 pro-pter mag-nam glo-ri-am tu-am.

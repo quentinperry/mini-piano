@@ -1,6 +1,7 @@
 # Mozart, Messe en ut mineur K. 427 — Qui tollis
-# Paroles extraites de la partition (CPDL, Philip Legge) et alignées sur 04quitollis.mid :
-# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus.
+# Paroles extraites de la partition vocale CPDL (P. Legge) (pages 35-51) et alignées sur 04quitollis.mid par pdf2paroles :
+# une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus,
+# « ~ » = syllabes chantées sur une même note.
 
 [Soprano I]
 Qui tol_-lis pec-ca-ta mun-di,

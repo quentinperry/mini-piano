@@ -1,5 +1,5 @@
 # Mozart, Messe en ut mineur K. 427 — Sanctus — Osanna
-# Paroles extraites de la partition vocale CPDL (P. Legge) (pages 90-102) et alignées sur 07sanctus.mid par pdf2paroles :
+# Paroles extraites de la partition vocale CPDL (P. Legge) (pages 90-102) et alignées sur « 07 Sanctus.mid » par pdf2paroles :
 # une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus,
 # « ~ » = syllabes chantées sur une même note.
 

@@ -1,5 +1,5 @@
 # Rameau (arr. É. Sciortino) — Hymne à la nuit
-# Paroles extraites de la partition et alignées sur « Rameau - La nuit.mid » :
+# Paroles extraites de la partition et alignées sur « Hymne à la nuit.mid » :
 # le MIDI joue la levée puis trois passages : 1er couplet, 2e couplet, reprise du 1er couplet.
 # Une syllabe par note de la piste du pupitre, « _ » = la syllabe tient une note de plus,
 # « ~ » = syllabes chantées sur une même note.

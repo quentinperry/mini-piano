@@ -63,6 +63,7 @@ Ky-ri-e e-lei-son,
 | `Ky-ri-e` | les tirets séparent les syllabes d'un mot (une note chacune) |
 | espace | sépare les mots |
 | `lei__` ou `lei _ _` | vocalise : chaque `_` fait tenir la syllabe sur une note de plus |
+| `qui~tol-lis` | élision : les syllabes reliées par `~` se chantent sur une seule note |
 | retour à la ligne | nouvelle ligne à l'écran |
 | ligne vide | nouveau paragraphe (petit espace dans le texte complet) |
 

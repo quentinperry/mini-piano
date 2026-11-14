@@ -77,7 +77,11 @@ def read_midi(path):
             if st == 0xFF:
                 typ = b[p]; ln2, p2 = vlq(p + 1)
                 if typ == 0x03 and not name:
-                    name = b[p2:p2 + ln2].decode("latin-1").strip()
+                    raw = b[p2:p2 + ln2]
+                    try:
+                        name = raw.decode("utf-8").strip()
+                    except UnicodeDecodeError:
+                        name = raw.decode("latin-1").strip()
                 if typ == 0x2F:
                     break
                 p = p2 + ln2

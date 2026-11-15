@@ -203,18 +203,51 @@ export function alignSection(section, notes) {
 // est une syllabe minutée. Conventions usuelles : « / » ou « \ » en début
 // = nouvelle ligne, retour chariot en fin = fin de ligne, tiret final =
 // le mot continue, espace final = fin de mot.
+// Couplets superposés (export MuseScore d'une partition à plusieurs
+// couplets) : chaque note porte les paroles de tous les couplets au même
+// instant (« 1.Hark! », « 2.Christ, », « 3.Hail, »). Quand le MIDI joue le
+// morceau plusieurs fois, le passage n prend le couplet n ; un refrain
+// commun (une seule syllabe) sert à tous. Les numéros de couplet sont
+// retirés. Syllabes identiques au même instant (piste à deux voix) : une seule.
+const VERSE_LABEL = /^\s*(\d+\.)+(\d+)?\s*/;
+function selectVerses(evts) {
+  const stacks = [];
+  for (const ev of evts) {
+    const last = stacks[stacks.length - 1];
+    if (last && Math.abs(last.time - ev.time) < 0.02) last.texts.push(ev.text);
+    else stacks.push({ time: ev.time, texts: [ev.text] });
+  }
+  for (const st of stacks) st.texts = st.texts.filter((t, i) => i === 0 || t !== st.texts[i - 1]);
+  const multi = stacks.some((st) => st.texts.length > 1);
+  if (!multi) return stacks.map((st) => ({ time: st.time, text: st.texts[0] }));
+  // le MIDI répète-t-il le morceau ? plus petite période des piles de paroles
+  const keys = stacks.map((st) => st.texts.join("\u0001"));
+  const n = keys.length;
+  let period = n;
+  for (let passes = 2; passes <= 8; passes++) {
+    if (n % passes) continue;
+    const pLen = n / passes;
+    let ok = true;
+    for (let i = 0; i + pLen < n && ok; i++) ok = keys[i] === keys[i + pLen];
+    if (ok) {
+      period = pLen;
+      break;
+    }
+  }
+  return stacks.map((st, i) => {
+    const pass = Math.floor(i / period);
+    const t = st.texts[Math.min(pass, st.texts.length - 1)];
+    return { time: st.time, text: t.replace(VERSE_LABEL, ""), verseStart: pass > 0 && i % period === 0 };
+  });
+}
+
 export function linesFromMidiLyrics(rawEvents, notes = []) {
   // Nettoyage : doublons (une piste à deux voix répète chaque syllabe au
   // même instant) et mentions qui ne sont pas des paroles (« By F
   // Mendelssohn-Bartholdy » : plusieurs mots dans un seul événement).
-  const events = [];
-  for (const ev of rawEvents) {
-    const words = ev.text.trim().split(/\s+/).filter(Boolean);
-    if (words.length >= 3) continue;
-    const prev = events[events.length - 1];
-    if (prev && Math.abs(prev.time - ev.time) < 0.02 && prev.text === ev.text) continue;
-    events.push(ev);
-  }
+  const events = selectVerses(
+    rawEvents.filter((ev) => ev.text.trim().split(/\s+/).filter(Boolean).length < 3)
+  );
   const explicit = events.some((ev) => /^[/\\]|[\r\n]$/.test(ev.text));
 
   // Fin du son avant l'instant t : la dernière note commencée avant t
@@ -228,6 +261,11 @@ export function linesFromMidiLyrics(rawEvents, notes = []) {
     }
     return end === -Infinity ? 0 : t - end;
   };
+
+  // écart typique entre deux syllabes : une note nettement plus longue
+  // marque souvent une fin de phrase
+  const gaps = events.slice(1).map((ev, i) => ev.time - events[i].time).filter((g) => g > 0.02).sort((a, b) => a - b);
+  const typicalGap = gaps.length ? gaps[Math.floor(gaps.length / 2)] : 0.5;
 
   const lines = [];
   let line = null;
@@ -250,7 +288,8 @@ export function linesFromMidiLyrics(rawEvents, notes = []) {
     const next = events[idx + 1];
     // Sans marques de fin de ligne dans le fichier, les lignes suivent la
     // musique : respiration, ponctuation, majuscule, longueur.
-    if (!explicit && line && line.syllables.length) {
+    if (ev.verseStart && line && line.syllables.length) newLine(true);
+    if (!explicit && line && line.syllables.length && !ev.verseStart) {
       const last = line.syllables[line.syllables.length - 1];
       if (!last.joinNext) {
         const rest = silenceBefore(last.start, ev.time);
@@ -260,7 +299,7 @@ export function linesFromMidiLyrics(rawEvents, notes = []) {
           rest >= 1.5 ||
           (/[.;:!?]$/.test(last.text) && words >= 3) ||
           (/,$/.test(last.text) && words >= 6) ||
-          (startsUpper && words >= 6) ||
+          (startsUpper && words >= 6 && (rest >= 0.1 || ev.time - last.start >= 1.6 * typicalGap)) ||
           words >= 12
         ) {
           newLine(rest >= 2.5);

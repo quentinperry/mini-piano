@@ -1,1 +1,1 @@
-self.__SW_ASSETS__ = ["apple-touch-icon.png","assets/index-DGWOZvIj.js","assets/index-K42YkkgG.css","icon-192.png","icon-512.png","icon-maskable-512.png","icon.svg","index.html","manifest.webmanifest","sw.js"];
+self.__SW_ASSETS__ = ["apple-touch-icon.png","assets/index-K42YkkgG.css","assets/index-cp-pGB3e.js","icon-192.png","icon-512.png","icon-maskable-512.png","icon.svg","index.html","manifest.webmanifest","sw.js"];

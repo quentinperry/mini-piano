@@ -16,7 +16,9 @@ function walk(dir) {
   return out;
 }
 
-const files = walk(dist).filter((f) => f !== "sw-manifest.js");
+// Les échantillons de piano (≈ 0,9 Mo) ne sont pas pré-cachés : ils sont
+// téléchargés à la première utilisation puis gardés par le service worker.
+const files = walk(dist).filter((f) => f !== "sw-manifest.js" && !f.startsWith("samples/"));
 writeFileSync(
   join(dist, "sw-manifest.js"),
   `self.__SW_ASSETS__ = ${JSON.stringify(files)};\n`

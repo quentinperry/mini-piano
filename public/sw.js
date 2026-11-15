@@ -2,7 +2,7 @@
 // Après chaque build, scripts/generate-sw-manifest.mjs écrit sw-manifest.js
 // (liste des fichiers produits) : on les pré-cache à l'installation, pour
 // qu'une visite hors ligne fonctionne dès le déploiement suivant.
-const CACHE = "mini-piano-v9";
+const CACHE = "mini-piano-v10";
 const CORE_ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./apple-touch-icon.png"];
 let PRECACHE_ASSETS = CORE_ASSETS;
 try {
@@ -28,30 +28,8 @@ self.addEventListener("activate", (e) => {
   );
 });
 
-// Morceaux intégrés (MIDI et paroles .txt) : servis depuis raw.githubusercontent.com, immuables
-// tant que le dépôt n'est pas modifié. Cache d'abord (lecture hors ligne
-// immédiate), revalidation en arrière-plan pour rester à jour.
-const SONGS_HOST = "raw.githubusercontent.com";
-
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  if (url.hostname === SONGS_HOST && /\.(midi?|txt)$/i.test(url.pathname)) {
-    e.respondWith(
-      caches.match(e.request).then((hit) => {
-        const fresh = fetch(e.request)
-          .then((res) => {
-            if (res.ok) {
-              const copy = res.clone();
-              caches.open(CACHE).then((c) => c.put(e.request, copy));
-            }
-            return res;
-          })
-          .catch(() => hit);
-        return hit || fresh;
-      })
-    );
-    return;
-  }
   // Échantillons de piano : immuables, cache d'abord (téléchargés une fois,
   // disponibles ensuite hors ligne).
   if (url.origin === self.location.origin && url.pathname.includes("/samples/")) {

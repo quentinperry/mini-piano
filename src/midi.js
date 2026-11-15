@@ -295,6 +295,35 @@ export function createMidiPlayer(events, duration, { onNoteOn, onNoteOff, onEnd 
   };
 
   return {
+    // Arrière-plan : les navigateurs mobiles (iOS surtout) ralentissent ou
+    // gèlent les minuteries d'une page cachée, et la lecture devient
+    // erratique. On confie alors d'un coup au moteur audio toutes les notes
+    // des `seconds` prochaines secondes, chacune avec son instant exact :
+    // l'horloge audio les joue seule, sans plus dépendre des minuteries.
+    // Au retour, resync() reprend la programmation normale à la bonne place.
+    flushAhead(seconds = 600) {
+      if (!playing) return;
+      if (ticker !== null) {
+        clearInterval(ticker);
+        ticker = null;
+      }
+      // événements déjà pris en charge par une minuterie : déclenchés tout de suite
+      for (const [id, fire] of timers) {
+        clearTimeout(id);
+        fire();
+      }
+      timers.clear();
+      const horizon = getPos() + seconds * speed;
+      while (nextIdx < events.length && events[nextIdx].t <= horizon) {
+        const ev = events[nextIdx++];
+        if (ev.on) onNoteOn(ev.midi, ev.velocity, ev.t, ev);
+        else onNoteOff(ev.midi, ev.t, ev);
+      }
+    },
+    resync() {
+      if (playing) this.play(speed, getPos());
+    },
+    getSpeed: () => speed,
     play(newSpeed = 1, from = null) {
       stopTicker();
       speed = newSpeed;

@@ -221,6 +221,40 @@ export class Synth {
     // Les tutti orchestraux (fichiers MIDI complets) dépassent vite les
     // capacités d'un mobile, jusqu'au grésillement voire au crash.
     this.maxVoices = 32;
+    // Notes programmées loin à l'avance (lecture en arrière-plan) : gardées
+    // pour pouvoir les annuler au retour au premier plan ou à la pause.
+    this.pending = [];
+  }
+
+  // Annule les notes programmées d'avance qui n'ont pas encore commencé ;
+  // avec all=true, coupe aussi (fondu court) celles qui sonnent déjà.
+  cancelPending(all = false) {
+    const c = ctx;
+    if (!c || !this.pending.length) {
+      this.pending = [];
+      return;
+    }
+    const t = c.currentTime;
+    for (const v of this.pending) {
+      const started = v.startedAt <= t + 0.02;
+      if (started && !all) continue;
+      try {
+        v.master.gain.cancelScheduledValues(t);
+        v.master.gain.setValueAtTime(started ? v.master.gain.value : 0, t);
+        v.master.gain.linearRampToValueAtTime(0, t + 0.04);
+      } catch (err) {
+        /* rien */
+      }
+      v.oscs.forEach((o) => {
+        try {
+          o.stop(started ? t + 0.06 : 0);
+        } catch (err) {
+          /* déjà arrêté */
+        }
+      });
+      if (this.active.get(v.id) === v) this.active.delete(v.id);
+    }
+    this.pending = [];
   }
 
   noteOn(id, freq, { volume = 0.6, partials = PARTIALS.length, at = null } = {}) {
@@ -231,10 +265,14 @@ export class Synth {
     // à l'instant demandé, même si le fil JS était occupé à ce moment-là.
     // C'est ce qui rend la lecture MIDI métronomique quoi qu'il arrive.
     const now = at !== null && at > c.currentTime ? at : c.currentTime;
+    // Note programmée loin à l'avance (lecture en arrière-plan) : pas de vol
+    // de voix (il couperait une note qui n'a pas encore commencé), et la voix
+    // est mémorisée pour pouvoir l'annuler.
+    const future = now > c.currentTime + 0.25;
 
     // Vol de voix : la Map conserve l'ordre d'insertion, la plus ancienne
     // passe la première. Un fondu très court évite les claquements.
-    while (this.active.size >= this.maxVoices) {
+    while (!future && this.active.size >= this.maxVoices) {
       const oldest = this.active.keys().next().value;
       this.noteOff(oldest, 0.12);
     }
@@ -255,7 +293,9 @@ export class Synth {
           src.connect(g);
           g.connect(masterBus || c.destination);
           src.start(now);
-          this.active.set(id, { master: g, oscs: [src], startedAt: now, peak, decayTime: 0, sample: true });
+          const voice = { id, master: g, oscs: [src], startedAt: now, peak, decayTime: 0, sample: true };
+          this.active.set(id, voice);
+          if (future) this.track(voice);
           return c.state === "running";
         } catch (err) {
           /* repli sur la synthèse */
@@ -360,8 +400,19 @@ export class Synth {
       }
     });
 
-    this.active.set(id, { master, oscs, startedAt: now, peak, decayTime });
+    const voice = { id, master, oscs, startedAt: now, peak, decayTime };
+    this.active.set(id, voice);
+    if (future) this.track(voice);
     return c.state === "running";
+  }
+
+  track(voice) {
+    // ménage : les notes terminées depuis longtemps ne sont plus suivies
+    if (this.pending.length > 4000 && ctx) {
+      const old = ctx.currentTime - 30;
+      this.pending = this.pending.filter((v) => v.startedAt > old);
+    }
+    this.pending.push(voice);
   }
   // Coupe planifiée : même logique que noteOff mais à un instant futur
   // de l'horloge audio, pour que la durée des notes d'une lecture MIDI soit

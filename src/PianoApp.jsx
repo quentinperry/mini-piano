@@ -165,10 +165,7 @@ export default function PianoApp() {
     if (idx >= 0 && String(idx) !== midiTrack) {
       const track = String(idx);
       setMidiTrack(track);
-      if (midiPlaying) {
-        pauseMidi();
-        startMidi(midiSpeed, track);
-      }
+      applyMidiChange(midiSpeed, track, midiMix);
     }
   };
 
@@ -343,6 +340,8 @@ export default function PianoApp() {
   const renderCacheRef = useRef(null); // dernier morceau préparé (réutilisé à la reprise)
   const renderJobRef = useRef(0);
   const [midiPreparing, setMidiPreparing] = useState(false);
+  const [midiUpdating, setMidiUpdating] = useState(false); // nouveau réglage en préparation, lecture en cours
+  const currentUrlRef = useRef(null);
   const getAudioEl = () => {
     if (!audioElRef.current) {
       const el = new Audio();
@@ -403,6 +402,7 @@ export default function PianoApp() {
   const pauseMidi = () => {
     renderJobRef.current++; // annule une préparation en cours
     setMidiPreparing(false);
+    setMidiUpdating(false);
     if (midiPlayerRef.current) {
       midiPosRef.current = midiPlayerRef.current.getPos();
       const el = audioElRef.current;
@@ -514,20 +514,15 @@ export default function PianoApp() {
     }
   };
 
-  const startMidi = (
-    speed = midiSpeed,
-    track = midiTrack,
-    fromPos = midiPosRef.current,
-    mix = midiMix
-  ) => {
-    if (!midi) return;
+  // Contenu à jouer pour une piste et un mode : événements (affichage des
+  // touches) et notes (fichier audio). Pistes jouées : toutes (tutti), la
+  // piste seule, ou la piste mise en avant accompagnée des autres en fond.
+  const buildPlayback = (track, mix) => {
     const leadIdx = track === "all" ? -1 : Number(track);
-    // Pistes jouées : toutes (tutti), la piste seule, ou la piste mise en
-    // avant accompagnée des autres en fond.
     const played = midi.tracks
       .map((t, i) => ({ notes: t.notes, bg: leadIdx !== -1 && i !== leadIdx }))
       .filter((t) => !(t.bg && mix === "solo"));
-    if (!played.some((t) => !t.bg && t.notes.length)) return;
+    if (!played.some((t) => !t.bg && t.notes.length)) return null;
     const events = [];
     let maxT = 0;
     for (const t of played) {
@@ -543,50 +538,10 @@ export default function PianoApp() {
     // la racine du nombre de pistes, le limiteur de sortie fait le reste.
     // En mise en avant, la piste choisie garde son plein volume et
     // l'accompagnement est atténué, divisé lui aussi selon son nombre de pistes.
-    const gainScale =
-      track === "all" && midi.tracks.length > 1
-        ? 1 / Math.sqrt(midi.tracks.length)
-        : 1;
+    const gainScale = track === "all" && midi.tracks.length > 1 ? 1 / Math.sqrt(midi.tracks.length) : 1;
     const bgCount = played.filter((t) => t.bg).length;
     const bgScale = bgCount ? BACKGROUND_GAIN / Math.sqrt(bgCount) : 0;
-    ensureAudio();
-    // Élément <audio> lancé pendant le geste (exigence d'iOS) : le fichier
-    // préparé quelques secondes plus tard pourra y être joué.
-    const el = getAudioEl();
-    unlockAudioEl(el);
-
     const vol = settingsRef.current.volume;
-    const rel = settingsRef.current.release;
-    const key = [track, mix, speed, vol, rel, timbre].join("|");
-    const cache = renderCacheRef.current;
-    const job = ++renderJobRef.current;
-    setMidiPlaying(true);
-
-    const launch = (url) => {
-      if (job !== renderJobRef.current) return; // annulé entre-temps
-      if (el.src !== url) el.src = url;
-      midiPlayerRef.current = createAudioPlayer(el, events, maxT, speed, {
-        onNoteOn: (m, v, t, ev) => showMidiOn(m, !!(ev && ev.bg)),
-        onNoteOff: (m, t, ev) => showMidiOff(m, !!(ev && ev.bg)),
-        onReset: resetMidiShow,
-        onEnd: () => {
-          midiPlayerRef.current = null;
-          midiPosRef.current = 0; // morceau terminé : une relecture repart du début
-          setMidiPlaying(false);
-          releaseMidiNotes();
-          setMidiProgress(maxT);
-        },
-      });
-      midiPlayerRef.current.play(speed, fromPos);
-      setMidiPreparing(false);
-      updateMediaSession();
-    };
-
-    if (cache && cache.midi === midi && cache.key === key) {
-      launch(cache.url);
-      return;
-    }
-    setMidiPreparing(true);
     const notes = [];
     for (const t of played) {
       for (const n of t.notes) {
@@ -596,20 +551,147 @@ export default function PianoApp() {
         notes.push({ start: n.start, end: n.end, midi: n.midi, gain });
       }
     }
-    renderPerformance(notes, maxT, { speed, release: rel, timbre, liveCtx: ensureAudio() })
-      .then((buffer) => {
-        if (job !== renderJobRef.current) return;
-        const url = URL.createObjectURL(bufferToWav(buffer));
-        if (cache && cache.url) URL.revokeObjectURL(cache.url);
-        renderCacheRef.current = { midi, key, url };
-        launch(url);
-      })
-      .catch((err) => {
-        if (job !== renderJobRef.current) return;
-        setMidiPreparing(false);
+    return { events, notes, maxT };
+  };
+
+  const renderKey = (track, mix, speed) =>
+    [track, mix, speed, settingsRef.current.volume, settingsRef.current.release, timbre].join("|");
+
+  // Fichiers préparés : les trois derniers sont gardés (revenir à une voix
+  // ou à un mode déjà entendu est immédiat), et une préparation en cours
+  // n'est jamais lancée deux fois.
+  const MAX_RENDERS = 3;
+  const prepareRender = (track, mix, speed) => {
+    let cache = renderCacheRef.current;
+    if (!cache || cache.midi !== midi) {
+      if (cache) for (const url of cache.urls.values()) if (url !== currentUrlRef.current) URL.revokeObjectURL(url);
+      cache = renderCacheRef.current = { midi, urls: new Map(), inflight: new Map() };
+    }
+    const key = renderKey(track, mix, speed);
+    if (cache.urls.has(key)) {
+      const url = cache.urls.get(key);
+      cache.urls.delete(key);
+      cache.urls.set(key, url); // le plus récent en dernier
+      return Promise.resolve(url);
+    }
+    if (cache.inflight.has(key)) return cache.inflight.get(key);
+    const pb = buildPlayback(track, mix);
+    if (!pb) return Promise.reject(new Error("piste vide"));
+    const job = renderPerformance(pb.notes, pb.maxT, {
+      speed,
+      release: settingsRef.current.release,
+      timbre,
+      liveCtx: ensureAudio(),
+    }).then((rendered) => {
+      const url = URL.createObjectURL(bufferToWav(rendered));
+      cache.inflight.delete(key);
+      cache.urls.set(key, url);
+      while (cache.urls.size > MAX_RENDERS) {
+        const [oldKey, oldUrl] = cache.urls.entries().next().value;
+        if (oldUrl === currentUrlRef.current) break;
+        cache.urls.delete(oldKey);
+        URL.revokeObjectURL(oldUrl);
+      }
+      return url;
+    });
+    job.catch(() => cache.inflight.delete(key));
+    cache.inflight.set(key, job);
+    return job;
+  };
+  const isRendered = (track, mix, speed) => {
+    const cache = renderCacheRef.current;
+    return !!(cache && cache.midi === midi && cache.urls.has(renderKey(track, mix, speed)));
+  };
+
+  // Lance (ou bascule vers) un fichier préparé, à une position donnée.
+  const launchRendered = (url, track, mix, speed, pos) => {
+    const pb = buildPlayback(track, mix);
+    if (!pb) return;
+    const el = getAudioEl();
+    if (midiPlayerRef.current) {
+      if (!el.paused) el.dataset.internal = "1";
+      midiPlayerRef.current.stop();
+    }
+    if (el.src !== url) el.src = url;
+    currentUrlRef.current = url;
+    const maxT = pb.maxT;
+    midiPlayerRef.current = createAudioPlayer(el, pb.events, maxT, speed, {
+      onNoteOn: (m, v, t, ev) => showMidiOn(m, !!(ev && ev.bg)),
+      onNoteOff: (m, t, ev) => showMidiOff(m, !!(ev && ev.bg)),
+      onReset: resetMidiShow,
+      onEnd: () => {
+        midiPlayerRef.current = null;
+        midiPosRef.current = 0; // morceau terminé : une relecture repart du début
         setMidiPlaying(false);
-        setMidiError("Préparation du morceau impossible : " + (err && err.message ? err.message : err));
-      });
+        releaseMidiNotes();
+        setMidiProgress(maxT);
+      },
+    });
+    midiPlayerRef.current.play(speed, pos);
+    setMidiPreparing(false);
+    setMidiUpdating(false);
+    updateMediaSession();
+  };
+
+  // Préparation anticipée de l'autre mode (en fond / coupées) de la même
+  // voix : basculer de l'un à l'autre est alors immédiat.
+  const prefetchOtherMix = (track, mix, speed) => {
+    if (track === "all" || midi.tracks.length < 2) return;
+    const other = mix === "solo" ? "lead" : "solo";
+    setTimeout(() => prepareRender(track, other, speed).catch(() => {}), 400);
+  };
+
+  const fail = (err) => {
+    setMidiPreparing(false);
+    setMidiUpdating(false);
+    setMidiPlaying(false);
+    setMidiError("Préparation du morceau impossible : " + (err && err.message ? err.message : err));
+  };
+
+  // Lecture : le fichier est préparé si besoin (quelques secondes), puis joué.
+  const startMidi = (
+    speed = midiSpeed,
+    track = midiTrack,
+    fromPos = midiPosRef.current,
+    mix = midiMix
+  ) => {
+    if (!midi || !buildPlayback(track, mix)) return;
+    ensureAudio();
+    // Élément <audio> lancé pendant le geste (exigence d'iOS) : le fichier
+    // préparé quelques secondes plus tard pourra y être joué.
+    unlockAudioEl(getAudioEl());
+    const job = ++renderJobRef.current;
+    setMidiPlaying(true);
+    if (!isRendered(track, mix, speed)) setMidiPreparing(true);
+    prepareRender(track, mix, speed)
+      .then((url) => {
+        if (job !== renderJobRef.current) return; // annulé entre-temps
+        launchRendered(url, track, mix, speed, fromPos);
+        prefetchOtherMix(track, mix, speed);
+      })
+      .catch((err) => job === renderJobRef.current && fail(err));
+  };
+
+  // Changement de voix, de mode ou de vitesse en cours de lecture : la
+  // musique continue avec l'ancien réglage pendant la préparation, puis
+  // bascule au même endroit. À l'arrêt, le fichier est préparé d'avance
+  // pour que la prochaine lecture démarre tout de suite.
+  const applyMidiChange = (speed, track, mix) => {
+    if (!midi || !buildPlayback(track, mix)) return;
+    if (!midiPlaying) {
+      prepareRender(track, mix, speed).catch(() => {});
+      return;
+    }
+    const job = ++renderJobRef.current;
+    if (!isRendered(track, mix, speed)) setMidiUpdating(true);
+    prepareRender(track, mix, speed)
+      .then((url) => {
+        if (job !== renderJobRef.current) return;
+        const pos = midiPlayerRef.current ? midiPlayerRef.current.getPos() : midiPosRef.current;
+        launchRendered(url, track, mix, speed, pos);
+        prefetchOtherMix(track, mix, speed);
+      })
+      .catch((err) => job === renderJobRef.current && fail(err));
   };
 
   const toggleMidi = () =>
@@ -773,27 +855,18 @@ export default function PianoApp() {
       setVoiceId(voice);
       setOctave(0);
     }
-    if (midiPlaying) {
-      pauseMidi();
-      startMidi(midiSpeed, track);
-    }
+    applyMidiChange(midiSpeed, track, midiMix);
   };
 
   const changeMidiMix = (mix) => {
     setMidiMix(mix);
-    if (midiPlaying) {
-      pauseMidi();
-      startMidi(midiSpeed, midiTrack, midiPosRef.current, mix);
-    }
+    applyMidiChange(midiSpeed, midiTrack, mix);
   };
 
   const changeMidiSpeed = (e) => {
     const speed = Number(e.target.value);
     setMidiSpeed(speed);
-    if (midiPlaying) {
-      pauseMidi();
-      startMidi(speed, midiTrack);
-    }
+    applyMidiChange(speed, midiTrack, midiMix);
   };
 
   // Au chargement d'un morceau, la piste du pupitre choisi est mise en avant
@@ -1254,6 +1327,11 @@ export default function PianoApp() {
                 </button>
               </div>
 
+              {midiUpdating && (
+                <p className="midi-status preparing">
+                  <span className="spinner" aria-hidden="true" /> Nouveau réglage en préparation… la lecture continue
+                </p>
+              )}
               {midiPreparing && (
                 <p className="midi-status preparing">
                   Préparation du morceau… (quelques secondes ; il pourra ensuite continuer en arrière-plan)

@@ -338,6 +338,7 @@ export default function PianoApp() {
   // directement : ils alimentent ces références, et un vidage cadencé à
   // l'œil (~60 fps) ne met à jour l'interface qu'une fois par frame.
   const midiPlayingRef = useRef(false);
+  const backgroundRef = useRef(false); // lecture confiée d'avance au moteur audio
   const pauseMidiRef = useRef(null);
   const midiUiIdsRef = useRef(null);
   const midiUiNoteRef = useRef(null);
@@ -365,6 +366,7 @@ export default function PianoApp() {
       synthRef.current.noteOff(voiceId, settingsRef.current.release)
     );
     midiHeldRef.current.clear();
+    synthRef.current.cancelPending(true);
     setMidiActiveIds(new Set());
   };
 
@@ -384,6 +386,13 @@ export default function PianoApp() {
   // Les notes d'accompagnement (pistes de fond) ont leurs propres voix de
   // synthé, pour qu'un unisson avec la piste mise en avant ne la coupe pas,
   // et elles n'allument pas le clavier : seule la voix travaillée s'affiche.
+  // Délai réel (secondes) avant l'instant songT du morceau, vitesse comprise.
+  const midiDelay = (songT) => {
+    const pl = midiPlayerRef.current;
+    if (!pl) return 0;
+    return Math.max(0, (songT - pl.getPos()) / (pl.getSpeed ? pl.getSpeed() : 1));
+  };
+
   const handleMidiNoteOn = (midiNum, velocity, gainScale = 1, songT = null, bg = false) => {
     const voiceId = (bg ? "midibg-" : "midi-") + midiNum;
     midiHeldRef.current.add(voiceId);
@@ -401,7 +410,7 @@ export default function PianoApp() {
     const c = ensureAudio();
     const at =
       songT !== null && c
-        ? c.currentTime + Math.max(0, songT - (midiPlayerRef.current ? midiPlayerRef.current.getPos() : songT))
+        ? c.currentTime + midiDelay(songT)
         : null;
     synthRef.current.noteOn(voiceId, midiToFreq(midiNum), {
       volume: gain,
@@ -426,7 +435,7 @@ export default function PianoApp() {
     const c = ensureAudio();
     if (songT !== null && c) {
       const at =
-        c.currentTime + Math.max(0, songT - (midiPlayerRef.current ? midiPlayerRef.current.getPos() : songT));
+        c.currentTime + midiDelay(songT);
       synthRef.current.scheduledOff(voiceId, at, settingsRef.current.release);
     } else {
       synthRef.current.noteOff(voiceId, settingsRef.current.release);
@@ -525,6 +534,11 @@ export default function PianoApp() {
       if (document.hidden) {
         if (pauseOnHiddenRef.current && midiPlayingRef.current) {
           pauseMidiRef.current();
+        } else if (midiPlayingRef.current && midiPlayerRef.current) {
+          // Lecture en arrière-plan : toute la suite est confiée d'un coup
+          // au moteur audio, qui la joue sans dépendre des minuteries.
+          midiPlayerRef.current.flushAhead();
+          backgroundRef.current = true;
         }
         keyHeld.current.forEach((id) => noteOff(id));
         keyHeld.current.clear();
@@ -536,6 +550,17 @@ export default function PianoApp() {
       } else {
         ensureAudio();
         setAudioStatus(audioState());
+        if (backgroundRef.current) {
+          // Retour au premier plan : les notes pas encore jouées sont
+          // annulées et la lecture reprend normalement à la bonne place
+          // (touches et paroles de nouveau synchronisées).
+          backgroundRef.current = false;
+          synthRef.current.cancelPending(false);
+          midiHeldRef.current.clear();
+          midiUiIdsRef.current = null;
+          setMidiActiveIds(new Set());
+          if (midiPlayerRef.current) midiPlayerRef.current.resync();
+        }
       }
     };
     const onPageShow = (e) => {

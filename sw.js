@@ -2,7 +2,7 @@
 // Après chaque build, scripts/generate-sw-manifest.mjs écrit sw-manifest.js
 // (liste des fichiers produits) : on les pré-cache à l'installation, pour
 // qu'une visite hors ligne fonctionne dès le déploiement suivant.
-const CACHE = "mini-piano-v8";
+const CACHE = "mini-piano-v9";
 const CORE_ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./apple-touch-icon.png"];
 let PRECACHE_ASSETS = CORE_ASSETS;
 try {
@@ -49,6 +49,24 @@ self.addEventListener("fetch", (e) => {
           .catch(() => hit);
         return hit || fresh;
       })
+    );
+    return;
+  }
+  // Échantillons de piano : immuables, cache d'abord (téléchargés une fois,
+  // disponibles ensuite hors ligne).
+  if (url.origin === self.location.origin && url.pathname.includes("/samples/")) {
+    e.respondWith(
+      caches.match(e.request).then(
+        (hit) =>
+          hit ||
+          fetch(e.request).then((res) => {
+            if (res.ok) {
+              const copy = res.clone();
+              caches.open(CACHE).then((c) => c.put(e.request, copy));
+            }
+            return res;
+          })
+      )
     );
     return;
   }

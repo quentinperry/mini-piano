@@ -1,0 +1,8 @@
+Échantillons de piano : Salamander Grand Piano V3
+Auteur : Alexander Holm — https://archive.org/details/SalamanderGrandPianoV3
+Licence : Creative Commons Attribution 3.0 (CC BY 3.0)
+https://creativecommons.org/licenses/by/3.0/
+
+Modifications : sélection d'une note toutes les tierces mineures (La1 à Do7,
+couche de vélocité 8), conversion en mono, durée réduite à 6 s (4 s au-dessus
+du Do5) avec fondu final, niveaux égalisés, encodage MP3 64 kb/s.

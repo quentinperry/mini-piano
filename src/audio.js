@@ -37,12 +37,12 @@ export function setSoundMode(mode) {
 // Réponse impulsionnelle de salle, calculée (pas de fichier) : bruit stéréo
 // à décroissance exponentielle, de plus en plus sourd (les aigus s'éteignent
 // plus vite dans une vraie salle), avec un court pré-délai.
-function makeRoomImpulse(c, seconds = 2.2) {
+export function makeRoomImpulse(c, seconds = 2.2, channels = 2) {
   const rate = c.sampleRate;
   const len = Math.floor(rate * seconds);
   const pre = Math.floor(rate * 0.012);
-  const ir = c.createBuffer(2, len, rate);
-  for (let ch = 0; ch < 2; ch++) {
+  const ir = c.createBuffer(channels, len, rate);
+  for (let ch = 0; ch < channels; ch++) {
     const data = ir.getChannelData(ch);
     let lp = 0;
     for (let i = pre; i < len; i++) {
@@ -70,7 +70,7 @@ export function onAudioStateChange(cb) {
 }
 
 // Génère un WAV d'une seconde de silence (8 kHz, 8 bits) sans fichier externe.
-function makeSilentWavUrl() {
+export function makeSilentWavUrl() {
   const sampleRate = 8000;
   const n = sampleRate;
   const buf = new ArrayBuffer(44 + n);
@@ -212,7 +212,7 @@ const PARTIALS = [
 
 // Gain des échantillons (normalisés à -20 dB RMS) pour un volume perçu
 // comparable à la synthèse.
-const SAMPLE_GAIN = 3.8;
+export const SAMPLE_GAIN = 3.8;
 
 export class Synth {
   constructor() {

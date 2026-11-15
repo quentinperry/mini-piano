@@ -3,10 +3,11 @@ import {
   PlayIcon, PauseIcon, Back10Icon, Fwd10Icon, ExpandIcon, ShrinkIcon,
   FileIcon, NoteIcon, VolumeIcon, SustainIcon, MinusIcon, PlusIcon, Logo, LyricsIcon,
 } from "./icons";
-import { Synth, ensureAudio, audioState, suspendAudio, onAudioStateChange, setSoundMode } from "./audio";
+import { Synth, ensureAudio, audioState, suspendAudio, onAudioStateChange, setSoundMode, makeSilentWavUrl } from "./audio";
+import { renderPerformance, bufferToWav, createAudioPlayer } from "./render";
 import { pianoStatus, onPianoStatus } from "./piano";
 import { buildKeys, buildKeyMap, midiToFreq } from "./notes";
-import { parseMidi, createMidiPlayer } from "./midi";
+import { parseMidi } from "./midi";
 import { listBuiltInSongs, fetchBuiltInSong, fetchBuiltInLyrics } from "./songs";
 import { detectVoice, findVoiceTrack, normalizeName } from "./voices";
 import { buildLyrics, lyricsSectionNames } from "./lyrics";
@@ -338,7 +339,36 @@ export default function PianoApp() {
   // directement : ils alimentent ces références, et un vidage cadencé à
   // l'œil (~60 fps) ne met à jour l'interface qu'une fois par frame.
   const midiPlayingRef = useRef(false);
-  const backgroundRef = useRef(false); // lecture confiée d'avance au moteur audio
+  const audioElRef = useRef(null); // lecteur <audio> des morceaux préparés
+  const renderCacheRef = useRef(null); // dernier morceau préparé (réutilisé à la reprise)
+  const renderJobRef = useRef(0);
+  const [midiPreparing, setMidiPreparing] = useState(false);
+  const getAudioEl = () => {
+    if (!audioElRef.current) {
+      const el = new Audio();
+      el.preload = "auto";
+      el.setAttribute("playsinline", "");
+      // pause venue de l'extérieur (écran verrouillé, appel, casque) : l'app
+      // suit. L'événement arrive en différé : une pause demandée par l'app
+      // elle-même est marquée, et ignorée quand son événement arrive.
+      el.addEventListener("pause", () => {
+        if (el.dataset.internal) {
+          delete el.dataset.internal;
+          return;
+        }
+        if (!el.ended && midiPlayingRef.current) pauseMidiRef.current();
+      });
+      audioElRef.current = el;
+    }
+    return audioElRef.current;
+  };
+  const unlockAudioEl = (el) => {
+    if (el.dataset.unlocked) return;
+    el.dataset.unlocked = "1";
+    el.src = makeSilentWavUrl();
+    const p = el.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  };
   const pauseMidiRef = useRef(null);
   const midiUiIdsRef = useRef(null);
   const midiUiNoteRef = useRef(null);
@@ -371,8 +401,12 @@ export default function PianoApp() {
   };
 
   const pauseMidi = () => {
+    renderJobRef.current++; // annule une préparation en cours
+    setMidiPreparing(false);
     if (midiPlayerRef.current) {
       midiPosRef.current = midiPlayerRef.current.getPos();
+      const el = audioElRef.current;
+      if (el && !el.paused) el.dataset.internal = "1";
       midiPlayerRef.current.stop();
       midiPlayerRef.current = null;
     }
@@ -427,6 +461,35 @@ export default function PianoApp() {
       midiUiDirtyRef.current = true;
       scheduleMidiUi();
     }
+  };
+
+  // Lecture par fichier audio : le son vient du fichier préparé, seules les
+  // touches s'allument au fil de la position (pistes de fond non affichées).
+  const showMidiOn = (midiNum, bg) => {
+    if (bg) return;
+    const key = keyByMidiRef.current.get(midiNum);
+    if (!key) return;
+    midiUiNoteRef.current = key;
+    const cur = midiUiIdsRef.current || new Set(midiActiveIds);
+    cur.add(key.id);
+    midiUiIdsRef.current = cur;
+    midiUiDirtyRef.current = true;
+    scheduleMidiUi();
+  };
+  const showMidiOff = (midiNum, bg) => {
+    if (bg) return;
+    const key = keyByMidiRef.current.get(midiNum);
+    if (!key) return;
+    const cur = midiUiIdsRef.current || new Set(midiActiveIds);
+    cur.delete(key.id);
+    midiUiIdsRef.current = cur;
+    midiUiDirtyRef.current = true;
+    scheduleMidiUi();
+  };
+  const resetMidiShow = () => {
+    midiUiIdsRef.current = new Set();
+    midiUiDirtyRef.current = true;
+    scheduleMidiUi();
   };
 
   const handleMidiNoteOff = (midiNum, songT = null, bg = false) => {
@@ -487,24 +550,109 @@ export default function PianoApp() {
     const bgCount = played.filter((t) => t.bg).length;
     const bgScale = bgCount ? BACKGROUND_GAIN / Math.sqrt(bgCount) : 0;
     ensureAudio();
-    midiPlayerRef.current = createMidiPlayer(events, maxT, {
-      onNoteOn: (m, v, t, ev) =>
-        handleMidiNoteOn(m, v, ev && ev.bg ? bgScale : gainScale, t, !!(ev && ev.bg)),
-      onNoteOff: (m, t, ev) => handleMidiNoteOff(m, t, !!(ev && ev.bg)),
-      onEnd: () => {
-        midiPlayerRef.current = null;
-        midiPosRef.current = 0; // morceau terminé : une relecture repart du début
-        setMidiPlaying(false);
-        releaseMidiNotes();
-        setMidiProgress(maxT);
-      },
-    });
-    midiPlayerRef.current.play(speed, fromPos);
+    // Élément <audio> lancé pendant le geste (exigence d'iOS) : le fichier
+    // préparé quelques secondes plus tard pourra y être joué.
+    const el = getAudioEl();
+    unlockAudioEl(el);
+
+    const vol = settingsRef.current.volume;
+    const rel = settingsRef.current.release;
+    const key = [track, mix, speed, vol, rel, timbre].join("|");
+    const cache = renderCacheRef.current;
+    const job = ++renderJobRef.current;
     setMidiPlaying(true);
+
+    const launch = (url) => {
+      if (job !== renderJobRef.current) return; // annulé entre-temps
+      if (el.src !== url) el.src = url;
+      midiPlayerRef.current = createAudioPlayer(el, events, maxT, speed, {
+        onNoteOn: (m, v, t, ev) => showMidiOn(m, !!(ev && ev.bg)),
+        onNoteOff: (m, t, ev) => showMidiOff(m, !!(ev && ev.bg)),
+        onReset: resetMidiShow,
+        onEnd: () => {
+          midiPlayerRef.current = null;
+          midiPosRef.current = 0; // morceau terminé : une relecture repart du début
+          setMidiPlaying(false);
+          releaseMidiNotes();
+          setMidiProgress(maxT);
+        },
+      });
+      midiPlayerRef.current.play(speed, fromPos);
+      setMidiPreparing(false);
+      updateMediaSession();
+    };
+
+    if (cache && cache.midi === midi && cache.key === key) {
+      launch(cache.url);
+      return;
+    }
+    setMidiPreparing(true);
+    const notes = [];
+    for (const t of played) {
+      for (const n of t.notes) {
+        // compression de vélocité : nuances audibles sans coups de marteau
+        const compressed = 48 + (n.velocity * 57) / 127;
+        const gain = vol * (0.35 + (0.65 * compressed) / 127) * (t.bg ? bgScale : gainScale);
+        notes.push({ start: n.start, end: n.end, midi: n.midi, gain });
+      }
+    }
+    renderPerformance(notes, maxT, { speed, release: rel, timbre, liveCtx: ensureAudio() })
+      .then((buffer) => {
+        if (job !== renderJobRef.current) return;
+        const url = URL.createObjectURL(bufferToWav(buffer));
+        if (cache && cache.url) URL.revokeObjectURL(cache.url);
+        renderCacheRef.current = { midi, key, url };
+        launch(url);
+      })
+      .catch((err) => {
+        if (job !== renderJobRef.current) return;
+        setMidiPreparing(false);
+        setMidiPlaying(false);
+        setMidiError("Préparation du morceau impossible : " + (err && err.message ? err.message : err));
+      });
   };
 
   const toggleMidi = () =>
     midiPlaying ? pauseMidi() : startMidi();
+
+  // Écran de verrouillage / centre de contrôle : titre du morceau et
+  // commandes lecture, pause, ±10 s, curseur.
+  const updateMediaSession = () => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator) || !midi) return;
+    try {
+      navigator.mediaSession.metadata = new window.MediaMetadata({
+        title: midi.name,
+        artist: midi.folder && midi.folder.length ? midi.folder.join(" — ") : "Mini Piano",
+        album: "Mini Piano",
+        artwork: [{ src: `${import.meta.env.BASE_URL}icon-512.png`, sizes: "512x512", type: "image/png" }],
+      });
+    } catch (err) {
+      /* métadonnées non prises en charge */
+    }
+  };
+  const mediaActionsRef = useRef({});
+  mediaActionsRef.current = {
+    play: () => !midiPlayingRef.current && toggleMidi(),
+    pause: () => midiPlayingRef.current && pauseMidi(),
+    seekBy: (d) => seekMidi(currentPos() + d),
+    seekTo: (t) => seekMidi(t),
+  };
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    const ms = navigator.mediaSession;
+    const set = (action, fn) => {
+      try {
+        ms.setActionHandler(action, fn);
+      } catch (err) {
+        /* action non prise en charge */
+      }
+    };
+    set("play", () => mediaActionsRef.current.play());
+    set("pause", () => mediaActionsRef.current.pause());
+    set("seekbackward", () => mediaActionsRef.current.seekBy(-10));
+    set("seekforward", () => mediaActionsRef.current.seekBy(10));
+    set("seekto", (e) => e && typeof e.seekTime === "number" && mediaActionsRef.current.seekTo(e.seekTime * (midiPlayerRef.current ? midiPlayerRef.current.getSpeed() : 1)));
+  }, []);
 
   // Saut dans le morceau : on relâche les notes tenues, puis on reprogramme
   // la lecture depuis la nouvelle position (les notes déjà passées ne sonnent
@@ -534,12 +682,8 @@ export default function PianoApp() {
       if (document.hidden) {
         if (pauseOnHiddenRef.current && midiPlayingRef.current) {
           pauseMidiRef.current();
-        } else if (midiPlayingRef.current && midiPlayerRef.current) {
-          // Lecture en arrière-plan : toute la suite est confiée d'un coup
-          // au moteur audio, qui la joue sans dépendre des minuteries.
-          midiPlayerRef.current.flushAhead();
-          backgroundRef.current = true;
         }
+        // sinon : le fichier audio continue seul en arrière-plan
         keyHeld.current.forEach((id) => noteOff(id));
         keyHeld.current.clear();
         pointerHeld.current.forEach((id) => noteOff(id));
@@ -550,17 +694,8 @@ export default function PianoApp() {
       } else {
         ensureAudio();
         setAudioStatus(audioState());
-        if (backgroundRef.current) {
-          // Retour au premier plan : les notes pas encore jouées sont
-          // annulées et la lecture reprend normalement à la bonne place
-          // (touches et paroles de nouveau synchronisées).
-          backgroundRef.current = false;
-          synthRef.current.cancelPending(false);
-          midiHeldRef.current.clear();
-          midiUiIdsRef.current = null;
-          setMidiActiveIds(new Set());
-          if (midiPlayerRef.current) midiPlayerRef.current.resync();
-        }
+        // retour au premier plan : touches recalées sur la position du fichier
+        if (midiPlayerRef.current) midiPlayerRef.current.resync();
       }
     };
     const onPageShow = (e) => {
@@ -1097,11 +1232,17 @@ export default function PianoApp() {
                 </button>
                 <button
                   type="button"
-                  className={`play-btn${midiPlaying ? " is-playing" : ""}`}
+                  className={`play-btn${midiPlaying ? " is-playing" : ""}${midiPreparing ? " is-preparing" : ""}`}
                   onClick={toggleMidi}
-                  aria-label={midiPlaying ? "Pause" : canResume ? "Reprendre" : "Lire"}
+                  aria-label={midiPreparing ? "Préparation… (toucher pour annuler)" : midiPlaying ? "Pause" : canResume ? "Reprendre" : "Lire"}
                 >
-                  {midiPlaying ? <PauseIcon size={26} /> : <PlayIcon size={26} />}
+                  {midiPreparing ? (
+                    <span className="spinner spinner-lg" aria-hidden="true" />
+                  ) : midiPlaying ? (
+                    <PauseIcon size={26} />
+                  ) : (
+                    <PlayIcon size={26} />
+                  )}
                 </button>
                 <button
                   type="button"
@@ -1113,6 +1254,11 @@ export default function PianoApp() {
                 </button>
               </div>
 
+              {midiPreparing && (
+                <p className="midi-status preparing">
+                  Préparation du morceau… (quelques secondes ; il pourra ensuite continuer en arrière-plan)
+                </p>
+              )}
               <div className="player-options">
                 <label className="field">
                   <span className="field-label">Piste</span>

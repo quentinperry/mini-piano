@@ -1708,3 +1708,18 @@ button {
   font-size: 11px;
   color: var(--ink-3);
 }
+
+/* Préparation du fichier audio d'un morceau */
+.spinner-lg {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: var(--on-accent);
+}
+
+.midi-status.preparing {
+  justify-content: center;
+  text-align: center;
+  font-size: 13px;
+}

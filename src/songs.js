@@ -1,26 +1,22 @@
-// Morceaux intégrés : le dossier « public/songs/ » de la branche `main` du
-// dépôt GitHub héberge les fichiers, éventuellement rangés en sous-dossiers.
-// Celui qui gère le répertoire y dépose simplement des .mid via l'interface
-// GitHub — aucun réglage côté code. L'app
-// découvre la liste via l'API GitHub (dépôt public), puis charge le morceau
-// choisi depuis raw.githubusercontent.com : les fichiers sont servis dès
-// l'upload, sans attendre le déploiement Pages, et le service worker les met
-// en cache après une première écoute pour un usage hors ligne.
+// Morceaux intégrés : le dossier « public/songs/ » du dépôt héberge les
+// fichiers, éventuellement rangés en sous-dossiers. Celui qui gère le
+// répertoire y dépose simplement des .mid via l'interface GitHub — aucun
+// réglage côté code : la mise en ligne automatique (1 à 2 min) publie les
+// fichiers avec le site, et le service worker les garde pour le hors-ligne.
 
-// Arborescence complète du dépôt en un seul appel : les morceaux peuvent être
-// rangés dans des sous-dossiers de « public/songs/ » (compositeur, œuvre…),
-// sur autant de niveaux que voulu, sans multiplier les requêtes à l'API.
-const SONGS_TREE_URL =
-  "https://api.github.com/repos/quentinperry/mini-piano/git/trees/main?recursive=1";
-const SONGS_PREFIX = "public/songs/";
-const SONGS_RAW_BASE =
-  "https://raw.githubusercontent.com/quentinperry/mini-piano/main/public/songs/";
-const SONGS_CACHE_KEY = "mini-piano-songs-v3";
+// Index de la bibliothèque : fabriqué à chaque mise en ligne du site (voir
+// vite.config.js), il liste tous les fichiers de « public/songs/ »,
+// sous-dossiers compris. Pas d'appel à l'API GitHub : aucune limite de
+// requêtes, même quand tout un chœur ouvre l'app sur le même Wi-Fi.
+const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
+const SONGS_INDEX_URL = `${BASE}songs/index.json`;
+const SONGS_BASE = `${BASE}songs/`;
+const SONGS_CACHE_KEY = "mini-piano-songs-v4";
 
-// Chemin relatif (« Mozart/Messe/01kyrie.mid ») -> adresse brute, chaque
-// segment encodé (espaces, accents).
-function rawUrl(path) {
-  return SONGS_RAW_BASE + path.split("/").map(encodeURIComponent).join("/");
+// Chemin relatif (« Mozart/Messe/01 Kyrie.mid ») -> adresse sur le site,
+// chaque segment encodé (espaces, accents).
+function songUrl(path) {
+  return SONGS_BASE + path.split("/").map(encodeURIComponent).join("/");
 }
 
 // Libellé lisible à partir du nom de fichier : « 01kyrie.mid » s'affichera
@@ -49,22 +45,16 @@ function readSongsCache() {
 // Liste des morceaux en « stale-while-revalidate » : la dernière liste
 // connue (stockée localement) est servie immédiatement via onUpdate, sans
 // attendre le réseau, puis la liste est rafraîchie en arrière-plan depuis
-// l'API GitHub et renvoyée via onUpdate si elle a changé. En cas d'échec
-// réseau (hors ligne, quota API), on retombe sur la liste connue.
+// l'index du site et renvoyée via onUpdate si elle a changé. En cas d'échec
+// réseau (hors ligne), on retombe sur la liste connue.
 export async function listBuiltInSongs(onUpdate) {
   const cached = readSongsCache();
   if (cached && typeof onUpdate === "function") onUpdate(cached);
   try {
-    const res = await fetch(SONGS_TREE_URL, {
-      headers: { Accept: "application/vnd.github+json" },
-    });
+    const res = await fetch(SONGS_INDEX_URL, { cache: "no-cache" });
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
-    const files = new Set(
-      (data.tree || [])
-        .filter((e) => e.type === "blob" && e.path.startsWith(SONGS_PREFIX))
-        .map((e) => e.path.slice(SONGS_PREFIX.length))
-    );
+    const files = new Set(data.files || []);
     // Paroles : fichier texte de même nom dans le même dossier,
     // « 01kyrie.paroles.txt » (ou « 01kyrie.txt »).
     const lyricsFor = (path) => {
@@ -94,7 +84,7 @@ export async function listBuiltInSongs(onUpdate) {
 
 // Charge le fichier MIDI d'un morceau intégré (chemin relatif à public/songs/).
 export async function fetchBuiltInSong(fileName) {
-  const res = await fetch(rawUrl(fileName));
+  const res = await fetch(songUrl(fileName));
   if (!res.ok) {
     throw new Error("Impossible de charger ce morceau (" + res.status + ").");
   }
@@ -105,7 +95,7 @@ export async function fetchBuiltInSong(fileName) {
 export async function fetchBuiltInLyrics(lyricsFile) {
   if (!lyricsFile) return null;
   try {
-    const res = await fetch(rawUrl(lyricsFile));
+    const res = await fetch(songUrl(lyricsFile));
     if (!res.ok) return null;
     return await res.text();
   } catch (err) {

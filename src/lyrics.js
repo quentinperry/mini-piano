@@ -203,12 +203,39 @@ export function alignSection(section, notes) {
 // est une syllabe minutée. Conventions usuelles : « / » ou « \ » en début
 // = nouvelle ligne, retour chariot en fin = fin de ligne, tiret final =
 // le mot continue, espace final = fin de mot.
-export function linesFromMidiLyrics(events) {
+export function linesFromMidiLyrics(rawEvents, notes = []) {
+  // Nettoyage : doublons (une piste à deux voix répète chaque syllabe au
+  // même instant) et mentions qui ne sont pas des paroles (« By F
+  // Mendelssohn-Bartholdy » : plusieurs mots dans un seul événement).
+  const events = [];
+  for (const ev of rawEvents) {
+    const words = ev.text.trim().split(/\s+/).filter(Boolean);
+    if (words.length >= 3) continue;
+    const prev = events[events.length - 1];
+    if (prev && Math.abs(prev.time - ev.time) < 0.02 && prev.text === ev.text) continue;
+    events.push(ev);
+  }
+  const explicit = events.some((ev) => /^[/\\]|[\r\n]$/.test(ev.text));
+
+  // Fin du son avant l'instant t : la dernière note commencée avant t
+  // s'arrête-t-elle nettement avant (silence = respiration) ?
+  const sorted = [...notes].sort((a, b) => a.start - b.start);
+  const silenceBefore = (from, t) => {
+    let end = -Infinity;
+    for (const n of sorted) {
+      if (n.start >= t - 0.01) break;
+      if (n.start >= from - 0.01 && n.end > end) end = n.end;
+    }
+    return end === -Infinity ? 0 : t - end;
+  };
+
   const lines = [];
   let line = null;
+  let words = 0;
   const newLine = (paragraph = false) => {
     line = { paragraph, syllables: [], start: null };
     lines.push(line);
+    words = 0;
   };
   events.forEach((ev, idx) => {
     let t = ev.text;
@@ -218,12 +245,31 @@ export function linesFromMidiLyrics(events) {
     }
     const breakAfter = /[\r\n]$/.test(t);
     t = t.replace(/[\r\n]+/g, "");
-    if (!line) newLine();
     const word = t.replace(/\s+$/, "");
-    const joinNext = /-$/.test(word) || (t === word && !breakAfter && !/[.,;:!?]$/.test(word));
     const clean = word.replace(/-$/, "");
+    const next = events[idx + 1];
+    // Sans marques de fin de ligne dans le fichier, les lignes suivent la
+    // musique : respiration, ponctuation, majuscule, longueur.
+    if (!explicit && line && line.syllables.length) {
+      const last = line.syllables[line.syllables.length - 1];
+      if (!last.joinNext) {
+        const rest = silenceBefore(last.start, ev.time);
+        const startsUpper = /^[A-ZÀ-ÖØ-Þ]/.test(clean);
+        if (
+          (rest >= 0.2 && words >= 3) ||
+          rest >= 1.5 ||
+          (/[.;:!?]$/.test(last.text) && words >= 3) ||
+          (/,$/.test(last.text) && words >= 6) ||
+          (startsUpper && words >= 6) ||
+          words >= 12
+        ) {
+          newLine(rest >= 2.5);
+        }
+      }
+    }
+    if (!line) newLine();
+    const joinNext = /-$/.test(word) || (t === word && !breakAfter && !/[.,;:!?]$/.test(word));
     if (clean) {
-      const next = events[idx + 1];
       const syl = {
         text: clean,
         joinNext,
@@ -232,6 +278,7 @@ export function linesFromMidiLyrics(events) {
       };
       if (line.start === null) line.start = syl.start;
       line.syllables.push(syl);
+      if (!joinNext) words++;
     }
     if (breakAfter) line = null;
   });
@@ -265,7 +312,8 @@ export function buildLyrics(midi, fileText, trackIdx) {
     }
   }
   if (track.lyrics && track.lyrics.length) {
-    return { ...linesFromMidiLyrics(track.lyrics), source: "midi", trackName: track.name };
+    const fromMidi = linesFromMidiLyrics(track.lyrics, track.notes);
+    if (fromMidi.syllableCount) return { ...fromMidi, source: "midi", trackName: track.name };
   }
   return null;
 }

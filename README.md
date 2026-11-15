@@ -15,7 +15,7 @@ notes en notation solfège (Do, Ré, Mi…), avec un son de piano synthétisé e
 - Outil `outils/pdf2paroles` : extrait les paroles d'une partition PDF par pupitre et les aligne sur le MIDI (voir son README)
 - Bibliothèque de morceaux intégrés : les fichiers MIDI déposés dans `public/songs/`, rangés en dossiers (compositeur, œuvre…), avec fil d'Ariane, recherche et dernier dossier retenu (voir « Ajouter des morceaux intégrés »)
 - Notation solfège + équivalent international + fréquence affichée
-- Synthèse de type piano : partiels harmoniques, attaque percussive, décrément naturel (les graves résonnent plus longtemps)
+- Son de vrai piano : échantillons du *Salamander Grand Piano* (Alexander Holm, CC BY 3.0), une note toutes les tierces mineures du La1 au Do7 (≈ 0,9 Mo, téléchargés au premier son puis disponibles hors ligne), avec une réverbération de salle discrète ; timbre « Synthé » au choix (synthèse Web Audio, rien à télécharger), utilisé aussi le temps du chargement
 - Jouable à la souris, au toucher, ou au clavier **AZERTY** : rangée du bas pour les blanches (Q S D F G H J K L M W X C V B), rangée du haut pour les noires
 - Réglages volume, sustain et octave
 - Bouton plein écran (là où le navigateur le permet) et PWA installable : une fois ajoutée à l'écran d'accueil, l'app démarre directement en plein écran et fonctionne hors ligne

@@ -3,7 +3,8 @@ import {
   PlayIcon, PauseIcon, Back10Icon, Fwd10Icon, ExpandIcon, ShrinkIcon,
   FileIcon, NoteIcon, VolumeIcon, SustainIcon, MinusIcon, PlusIcon, Logo, LyricsIcon,
 } from "./icons";
-import { Synth, ensureAudio, audioState, suspendAudio, onAudioStateChange } from "./audio";
+import { Synth, ensureAudio, audioState, suspendAudio, onAudioStateChange, setSoundMode } from "./audio";
+import { pianoStatus, onPianoStatus } from "./piano";
 import { buildKeys, buildKeyMap, midiToFreq } from "./notes";
 import { parseMidi, createMidiPlayer } from "./midi";
 import { listBuiltInSongs, fetchBuiltInSong, fetchBuiltInLyrics } from "./songs";
@@ -75,6 +76,28 @@ export default function PianoApp() {
   const [octave, setOctave] = useState(0);
   const [volume, setVolume] = useState(0.5);
   const [release, setRelease] = useState(0.35);
+  // Timbre : vrai piano (échantillons) ou synthé, mémorisé sur l'appareil.
+  const [timbre, setTimbre] = useState(() => {
+    let t = "piano";
+    try {
+      t = localStorage.getItem("mini-piano-timbre") === "synth" ? "synth" : "piano";
+    } catch (err) {
+      /* stockage indisponible */
+    }
+    setSoundMode(t); // avant la création du contexte audio
+    return t;
+  });
+  const [pianoLoad, setPianoLoad] = useState(pianoStatus);
+  useEffect(() => onPianoStatus(setPianoLoad), []);
+  const chooseTimbre = (t) => {
+    setTimbre(t);
+    setSoundMode(t);
+    try {
+      localStorage.setItem("mini-piano-timbre", t);
+    } catch (err) {
+      /* stockage indisponible */
+    }
+  };
   const [activeIds, setActiveIds] = useState(() => new Set());
   const [lastNote, setLastNote] = useState(null);
   const [audioStatus, setAudioStatus] = useState("idle");
@@ -897,6 +920,31 @@ export default function PianoApp() {
       <div className="panels">
         <section className="panel panel-sound" aria-labelledby="sound-title">
           <h2 id="sound-title" className="panel-title">Son</h2>
+          <div className="field">
+            <span className="field-label" id="timbre-label">Timbre</span>
+            <div className="segmented segmented-sm timbre" role="radiogroup" aria-labelledby="timbre-label">
+              {[["piano", "Piano"], ["synth", "Synthé"]].map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={timbre === id}
+                  className={timbre === id ? "is-selected" : ""}
+                  onClick={() => chooseTimbre(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {timbre === "piano" && pianoLoad === "loading" && (
+              <span className="timbre-note">
+                <span className="spinner" aria-hidden="true" /> Chargement du piano… (synthé en attendant)
+              </span>
+            )}
+            {timbre === "piano" && pianoLoad === "error" && (
+              <span className="timbre-note">Piano indisponible hors ligne pour l'instant : synthé utilisé.</span>
+            )}
+          </div>
           <label className="slider">
             <span className="slider-head">
               <VolumeIcon size={18} />
@@ -929,6 +977,11 @@ export default function PianoApp() {
               onChange={(e) => setRelease(Number(e.target.value))}
             />
           </label>
+          {timbre === "piano" && (
+            <p className="credit">
+              Piano : Salamander Grand Piano, Alexander Holm (CC BY 3.0)
+            </p>
+          )}
         </section>
 
         <section className="panel panel-midi" aria-labelledby="midi-title">

@@ -1,5 +1,9 @@
-// Synthèse type piano : partiels harmoniques avec inharmonicité légère,
-// attaque percussive et décrément naturel (graves plus longs que les aigus).
+// Son de piano : échantillons d'un vrai piano (src/piano.js) quand ils sont
+// chargés, sinon synthèse (partiels harmoniques avec inharmonicité légère,
+// attaque percussive, décrément naturel). Une réverbération de salle discrète
+// est appliquée à la sortie.
+import { loadPiano, sampleFor } from "./piano";
+
 let ctx = null;
 let masterBus = null;
 let silentEl = null;
@@ -22,6 +26,37 @@ function emitAudioState() {
 
 // S'abonne aux changements d'état de l'AudioContext. Renvoie la fonction
 // de désabonnement. L'état courant est aussitôt renvoyé si un contexte existe.
+// Mode sonore : « piano » (échantillons, synthé en attendant leur
+// chargement) ou « synth » (synthèse seule, rien à télécharger).
+let soundMode = "piano";
+export function setSoundMode(mode) {
+  soundMode = mode === "synth" ? "synth" : "piano";
+  if (soundMode === "piano" && ctx) loadPiano(ctx);
+}
+
+// Réponse impulsionnelle de salle, calculée (pas de fichier) : bruit stéréo
+// à décroissance exponentielle, de plus en plus sourd (les aigus s'éteignent
+// plus vite dans une vraie salle), avec un court pré-délai.
+function makeRoomImpulse(c, seconds = 2.2) {
+  const rate = c.sampleRate;
+  const len = Math.floor(rate * seconds);
+  const pre = Math.floor(rate * 0.012);
+  const ir = c.createBuffer(2, len, rate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = ir.getChannelData(ch);
+    let lp = 0;
+    for (let i = pre; i < len; i++) {
+      const t = (i - pre) / rate;
+      const env = Math.exp(-t * 3.2);
+      // filtre passe-bas d'un pôle dont la coupure baisse avec le temps
+      const a = 0.25 + 0.7 * Math.exp(-t * 2.5);
+      lp += a * ((Math.random() * 2 - 1) - lp);
+      data[i] = lp * env;
+    }
+  }
+  return ir;
+}
+
 export function onAudioStateChange(cb) {
   stateListeners.add(cb);
   if (ctx) {
@@ -108,7 +143,20 @@ export function ensureAudio() {
       masterBus = ctx.createGain();
       masterBus.gain.value = 0.9;
       masterBus.connect(limiter);
+      // Réverbération de salle en parallèle (son direct inchangé)
+      try {
+        const verb = ctx.createConvolver();
+        verb.buffer = makeRoomImpulse(ctx);
+        const wet = ctx.createGain();
+        wet.gain.value = 0.22;
+        masterBus.connect(verb);
+        verb.connect(wet);
+        wet.connect(limiter);
+      } catch (err) {
+        /* pas de réverbération : sans conséquence */
+      }
       limiter.connect(ctx.destination);
+      if (soundMode === "piano") loadPiano(ctx);
       ctx.addEventListener("statechange", emitAudioState);
     } catch (err) {
       ctx = null;
@@ -162,6 +210,10 @@ const PARTIALS = [
   { ratio: 5.0, gain: 0.05, decayFactor: 0.25 },
 ];
 
+// Gain des échantillons (normalisés à -20 dB RMS) pour un volume perçu
+// comparable à la synthèse.
+const SAMPLE_GAIN = 3.8;
+
 export class Synth {
   constructor() {
     this.active = new Map();
@@ -185,6 +237,30 @@ export class Synth {
     while (this.active.size >= this.maxVoices) {
       const oldest = this.active.keys().next().value;
       this.noteOff(oldest, 0.12);
+    }
+
+    // Échantillon de vrai piano si disponible pour cette note
+    if (soundMode === "piano") {
+      const midi = Math.round(69 + 12 * Math.log2(freq / 440));
+      const smp = sampleFor(midi);
+      if (smp) {
+        try {
+          const src = c.createBufferSource();
+          src.buffer = smp.buffer;
+          src.playbackRate.value = smp.rate;
+          const g = c.createGain();
+          const peak = Math.max(0.001, volume * SAMPLE_GAIN);
+          g.gain.setValueAtTime(0, now);
+          g.gain.linearRampToValueAtTime(peak, now + 0.002);
+          src.connect(g);
+          g.connect(masterBus || c.destination);
+          src.start(now);
+          this.active.set(id, { master: g, oscs: [src], startedAt: now, peak, decayTime: 0, sample: true });
+          return c.state === "running";
+        } catch (err) {
+          /* repli sur la synthèse */
+        }
+      }
     }
 
     const master = c.createGain();
@@ -303,7 +379,9 @@ export class Synth {
       const tau = Math.max(0.05, v.decayTime / 4);
       const elapsed = Math.max(0, at - v.startedAt);
       let cur;
-      if (elapsed <= 0.003) {
+      if (v.sample) {
+        cur = elapsed <= 0.002 ? v.peak * Math.max(0, elapsed / 0.002) : v.peak;
+      } else if (elapsed <= 0.003) {
         cur = v.peak * Math.max(0, elapsed / 0.003);
       } else {
         cur = floor + (v.peak - floor) * Math.exp(-(elapsed - 0.003) / tau);
@@ -344,7 +422,9 @@ export class Synth {
       const tau = Math.max(0.05, v.decayTime / 4);
       const elapsed = t - v.startedAt;
       let cur;
-      if (elapsed <= 0.003) {
+      if (v.sample) {
+        cur = elapsed <= 0.002 ? v.peak * Math.max(0, elapsed / 0.002) : v.peak;
+      } else if (elapsed <= 0.003) {
         cur = v.peak * Math.max(0, elapsed / 0.003);
       } else {
         cur = floor + (v.peak - floor) * Math.exp(-(elapsed - 0.003) / tau);

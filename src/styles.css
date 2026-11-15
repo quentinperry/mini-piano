@@ -1685,3 +1685,26 @@ button {
 .library {
   scroll-margin-top: 12px;
 }
+
+/* Timbre (piano échantillonné / synthé) */
+.timbre {
+  display: flex;
+}
+
+.timbre button {
+  flex: 1 1 0;
+}
+
+.timbre-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.credit {
+  margin: 0;
+  font-size: 11px;
+  color: var(--ink-3);
+}

@@ -2,8 +2,8 @@
 
 Chaque chant transcrit depuis la partoche décrit :
 - ses voix, en texte : « G4:3 A4:1 G4:2 | E4:6 | … » (hauteur:durée en
-  croches, « r » = silence, « F#4 » / « Bb3 » pour les altérations, les
-  barres de mesure « | » ne servent qu'à la lisibilité) ;
+  croches ou dans l'unité choisie, « r » = silence, « F#4 » / « Bb3 » pour
+  les altérations, les barres « | » ne servent qu'à la lisibilité) ;
 - ses couplets : une entrée par note de la voix de référence (soprano par
   défaut), « _ » pour une note tenue sur la même syllabe (mélisme), tiret
   final = le mot continue, « _ » collé (« re_an- ») = espace dans la syllabe ;
@@ -52,9 +52,10 @@ def meta(t, data):
     return b"\xff" + bytes([t]) + vlq(len(data)) + data
 
 
-def build(path, title, parts, verses, line_starts=(), tempo=72, timesig=(4, 4), gap=0, lead=0):
-    """parts : [(nom de piste, texte des notes)] ; gap : silence (en croches)
-    entre deux couplets ; lead : indice de la voix qui porte les paroles."""
+def build(path, title, parts, verses, line_starts=(), tempo=72, timesig=(4, 4), gap=0, lead=0, unit=EIGHTH):
+    """parts : [(nom de piste, texte des notes)] ; gap : silence entre deux
+    couplets ; lead : indice de la voix qui porte les paroles ; unit : durée
+    d'une unité en ticks (croche par défaut, PPQ // 4 pour la double croche)."""
     parsed = [(name, parse(s)) for name, s in parts]
     lens = [sum(d for _, d in p) for _, p in parsed]
     assert len(set(lens)) == 1, f"voix de longueurs différentes (croches) : {dict(zip([n for n, _ in parts], lens))}"
@@ -78,7 +79,7 @@ def build(path, title, parts, verses, line_starts=(), tempo=72, timesig=(4, 4), 
                 txt = ("\\" if v else "/") + txt
             elif i in line_starts:
                 txt = "/" + txt
-            lyr.append(((v * verse_len + starts[i]) * EIGHTH, txt))
+            lyr.append(((v * verse_len + starts[i]) * unit, txt))
 
     def track(name, notes, ch):
         ev = [(0, 0, meta(3, name.encode("utf-8"))), (0, 1, bytes([0xC0 | ch, 0]))]
@@ -86,8 +87,8 @@ def build(path, title, parts, verses, line_starts=(), tempo=72, timesig=(4, 4), 
             t = v * verse_len
             for p, d in notes:
                 if p is not None:
-                    ev.append((t * EIGHTH, 3, bytes([0x90 | ch, p, 80])))
-                    ev.append(((t + d) * EIGHTH - 10, 1, bytes([0x80 | ch, p, 0])))
+                    ev.append((t * unit, 3, bytes([0x90 | ch, p, 80])))
+                    ev.append(((t + d) * unit - 10, 1, bytes([0x80 | ch, p, 0])))
                 t += d
         for tick, txt in lyr:
             ev.append((tick, 2, meta(5, txt.encode("utf-8"))))

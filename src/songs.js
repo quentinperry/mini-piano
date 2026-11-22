@@ -11,7 +11,7 @@
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const SONGS_INDEX_URL = `${BASE}songs/index.json`;
 const SONGS_BASE = `${BASE}songs/`;
-const SONGS_CACHE_KEY = "mini-piano-songs-v4";
+const SONGS_CACHE_KEY = "mini-piano-songs-v5";
 
 // Chemin relatif (« Mozart/Messe/01 Kyrie.mid ») -> adresse sur le site,
 // chaque segment encodé (espaces, accents).
@@ -55,6 +55,7 @@ export async function listBuiltInSongs(onUpdate) {
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
     const files = new Set(data.files || []);
+    const midiLyrics = new Set(data.midiLyrics || []);
     // Paroles : fichier texte de même nom dans le même dossier,
     // « 01kyrie.paroles.txt » (ou « 01kyrie.txt »).
     const lyricsFor = (path) => {
@@ -66,7 +67,14 @@ export async function listBuiltInSongs(onUpdate) {
       .map((path) => {
         const parts = path.split("/");
         const file = parts.pop();
-        return { name: path, title: titleFromFileName(file), folder: parts, lyricsFile: lyricsFor(path) };
+        const lyricsFile = lyricsFor(path);
+        return {
+          name: path,
+          title: titleFromFileName(file),
+          folder: parts,
+          lyricsFile,
+          hasLyrics: Boolean(lyricsFile) || midiLyrics.has(path),
+        };
       })
       .sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true }));
     try {
@@ -84,7 +92,9 @@ export async function listBuiltInSongs(onUpdate) {
 
 // Charge le fichier MIDI d'un morceau intégré (chemin relatif à public/songs/).
 export async function fetchBuiltInSong(fileName) {
-  const res = await fetch(songUrl(fileName));
+  // « no-cache » : un morceau remplacé dans le dépôt est relu tout de suite
+  // (sinon le cache HTTP peut servir l'ancienne version quelques minutes).
+  const res = await fetch(songUrl(fileName), { cache: "no-cache" });
   if (!res.ok) {
     throw new Error("Impossible de charger ce morceau (" + res.status + ").");
   }

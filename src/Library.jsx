@@ -168,7 +168,7 @@ export function Library({ songs, selected, loading, onOpen, onChoose }) {
             <span className="lib-path">{s.folder.join(" › ")}</span>
           )}
         </span>
-        {s.lyricsFile && <span className="lib-badge">paroles</span>}
+        {(s.hasLyrics || s.lyricsFile) && <span className="lib-badge">paroles</span>}
       </button>
     </li>
   );

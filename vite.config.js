@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { readdirSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,6 +22,21 @@ function listSongs(dir = SONGS_DIR) {
 // ligne, déclenchée par tout ajout de fichier sur main) : l'app n'a plus
 // besoin de l'API GitHub, limitée à 60 demandes par heure et par adresse IP
 // (vite atteinte quand tout un chœur partage le Wi-Fi d'une répétition).
+// MIDI contenant des paroles intégrées (méta-événements « lyric » FF 05),
+// pour signaler « paroles » dans la bibliothèque sans fichier .paroles.txt.
+function midiWithLyrics(files) {
+  return files.filter((f) => {
+    if (!/\.midi?$/i.test(f)) return false;
+    try {
+      const buf = readFileSync(SONGS_DIR + f);
+      for (let i = 0; i + 1 < buf.length; i++) if (buf[i] === 0xff && buf[i + 1] === 0x05) return true;
+    } catch (err) {
+      /* fichier illisible : pas de mention */
+    }
+    return false;
+  });
+}
+
 function songsIndex() {
   return {
     name: "songs-index",
@@ -29,14 +44,15 @@ function songsIndex() {
       server.middlewares.use((req, res, next) => {
         if ((req.url || "").split("?")[0] !== `${BASE}songs/index.json`) return next();
         res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify({ files: listSongs() }));
+        const files = listSongs();
+        res.end(JSON.stringify({ files, midiLyrics: midiWithLyrics(files) }));
       });
     },
     generateBundle() {
       this.emitFile({
         type: "asset",
         fileName: "songs/index.json",
-        source: JSON.stringify({ files: listSongs(), generated: new Date().toISOString() }),
+        source: JSON.stringify({ files: listSongs(), midiLyrics: midiWithLyrics(listSongs()), generated: new Date().toISOString() }),
       });
     },
   };

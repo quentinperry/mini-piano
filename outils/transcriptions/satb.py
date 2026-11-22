@@ -24,10 +24,16 @@ def midi_of(p):
 
 
 def parse(s):
+    """« G4:2 » une note, « Eb3+G3:2 » deux notes ensemble (pupitre divisé)."""
     out = []
     for tok in s.replace("|", " ").split():
         p, d = tok.split(":")
-        out.append((None if p == "r" else midi_of(p), int(d)))
+        if p == "r":
+            out.append((None, int(d)))
+        elif "+" in p:
+            out.append((tuple(midi_of(x) for x in p.split("+")), int(d)))
+        else:
+            out.append((midi_of(p), int(d)))
     return out
 
 
@@ -86,11 +92,18 @@ def build(path, title, parts, verses, line_starts=(), tempo=72, timesig=(4, 4), 
                 f"passage {k + 1}, {names[vi]} : {len(toks)} syllabes pour {len(starts)} notes")
             out = []
             for i, tok in enumerate(toks):
+                mark = ""
+                if tok.startswith("//"):
+                    mark, tok = "\\", tok[2:]
+                elif tok.startswith("/"):
+                    mark, tok = "/", tok[1:]
                 if tok == "_":
                     continue
                 tok = tok.replace("_", " ")
                 txt = tok if tok.endswith("-") else tok + " "
-                if i == 0:
+                if mark and i:
+                    txt = mark + txt
+                elif i == 0:
                     txt = ("\\" if k else "/") + txt
                 elif i in para_starts:
                     txt = "\\" + txt
@@ -117,8 +130,9 @@ def build(path, title, parts, verses, line_starts=(), tempo=72, timesig=(4, 4), 
     def track(name, notes, ch, lyr):
         ev = [(0, 0, meta(3, name.encode("utf-8"))), (0, 1, bytes([0xC0 | ch, 0]))]
         for t, p, d in notes:
-            ev.append((t * unit, 3, bytes([0x90 | ch, p, 80])))
-            ev.append(((t + d) * unit - 10, 1, bytes([0x80 | ch, p, 0])))
+            for q in (p if isinstance(p, tuple) else (p,)):
+                ev.append((t * unit, 3, bytes([0x90 | ch, q, 80])))
+                ev.append(((t + d) * unit - 10, 1, bytes([0x80 | ch, q, 0])))
         for tick, txt in lyr:
             ev.append((tick, 2, meta(5, txt.encode("utf-8"))))
         ev.sort(key=lambda e: (e[0], e[1]))
